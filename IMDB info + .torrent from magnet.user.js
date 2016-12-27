@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
 // @version       1.20161222
-// @description   Show info of movie/series (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...)
+// @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @author        hossam6236
 // @license       GNU General Public License v3.0
