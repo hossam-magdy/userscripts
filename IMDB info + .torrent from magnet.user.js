@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       1.20161227
+// @version       1.20170123
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -20,6 +20,7 @@
 // @include       http*://*toorgle*.*/*
 // @include       http*://*demonoid*.*/*
 // @include       http*://*kickass*.*/*
+// @include       http*://*kat*.*/*
 // @require       https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js
 // @grant         GM_xmlhttpRequest
 // @connect       imdb.com
