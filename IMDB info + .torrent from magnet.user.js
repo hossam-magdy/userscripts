@@ -27,6 +27,10 @@
 // @connect       omdbapi.com
 // ==/UserScript==
 
+// Find at:
+// https://greasyfork.org/en/scripts/16946-imdb-info-torrent-from-magnet
+// https://openuserjs.org/scripts/hossam6236/IMDB_info_%2B_.torrent_from_magnet
+
 // regext for cleaning the titles
 var reM = /[0-9]{4}/i;
 var reS = /S[0-9]{2}E[0-9]{2}|[0-9]{1}x[0-9]{2}/i;
