@@ -202,7 +202,7 @@ try {
                             //console.log(stor_title);
                             //console.log(results);
                             $.each(results, function(index, item){
-                                console.log(item.title_description + (year+1));
+                                //console.log(item.title_description + (year+1));
                                 if(item.title_description.indexOf(year)>-1 || item.title_description.indexOf(parseInt(year)+1)>-1 || item.title_description.indexOf(parseInt(year)-1)>-1){
                                     //console.log('FOUND');
                                     data = $.merge(data, [item]);
