@@ -21,6 +21,7 @@
 // @include       http*://*demonoid*.*/*
 // @include       http*://*kickass*.*/*
 // @include       http*://*kat*.*/*
+// @include       http*://*boxofficemojo*.*/*
 // @require       https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js
 // @grant         GM_xmlhttpRequest
 // @connect       imdb.com
@@ -46,6 +47,16 @@ movie_db = {};
 movie_loading = {};
 try {
 
+    $.urlParam = function(name){
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if(results)
+            return results[1];
+        else
+            return 0;
+        // example.com?param1=name&param2=&id=6
+        // $.urlParam('param1'); // name
+    };
+
     var c = localStorage.getItem('movie_db');
     if (c) {
         $.extend(movie_db, JSON.parse(c));
@@ -57,7 +68,7 @@ try {
     }
 
     var count = 0;
-    start_button = $('<div style="width: 200px; height: 60px;display: inline-block;"><div style="height: 20px; margin: 0px;"><input type="checkbox" name="from_imdb" id="from_imdb" style="margin: 0px; display: inline-block;" checked /><label for="from_imdb" style="font:10pt Tahoma; margin: 0px; display: inline-block;">from IMDb</label> | <input type="checkbox" name="live" id="live" style="margin: 0px; display: inline-block;" /><label for="live" style="font:10pt Tahoma; margin: 0px; display: inline-block;">live</label> | <a href="javascript:location.reload();" style="color:#000; font:7pt Tahoma;" id="clear">(clear cache)</a></div><button style="display: inline-block; margin:0px; padding:7px; font:12pt Tahoma;" id="start"> load IMDb info </button></div>');
+    start_button = $('<div style="width: 200px; height: 60px;display: inline-block; position: fixed; opacity: 0.75; z-index: 1000; background-color: #FFF; text-align: center;"><div style="height: 20px; margin: 0px;"><input type="checkbox" name="from_imdb" id="from_imdb" style="margin: 0px; display: inline-block;" checked /><label for="from_imdb" style="font:10pt Tahoma; margin: 0px; display: inline-block;">from IMDb</label> | <input type="checkbox" name="live" id="live" style="margin: 0px; display: inline-block;" /><label for="live" style="font:10pt Tahoma; margin: 0px; display: inline-block;">live</label> | <a href="javascript:location.reload();" style="color:#000; font:7pt Tahoma;" id="clear">(clear cache)</a></div><button style="display: inline-block; margin:0px; padding:7px; font:12pt Tahoma;" id="start"> load IMDb info </button></div>');
     //start_button.appendTo($('h1').first());
     // start_button.appendTo($('h1').first());
     $('body').prepend(start_button);
@@ -167,7 +178,8 @@ try {
             return true;
         }else{
             if (from_imdb){
-                var url = 'http://www.imdb.com/xml/find?json=1&nr=1&tt=on&q=' + encodeURIComponent(title /*+ ' (' + year + ')'*/);
+                var url = 'http://www.imdb.com/xml/find?json=1&nr=1&tt=on&q=' + encodeURIComponent(title + ' (' + year + ')');
+                //console.log(url);
                 $('#loading', dl_element).text('Loading1');
                 GM_xmlhttpRequest({
                     method: 'GET',
@@ -187,8 +199,12 @@ try {
                             results = $.merge(results, resp.title_approx);
                         }
                         if(reM.exec(year)){
+                            //console.log(stor_title);
+                            //console.log(results);
                             $.each(results, function(index, item){
-                                if(item.title_description.indexOf(year)>-1){
+                                console.log(item.title_description + (year+1));
+                                if(item.title_description.indexOf(year)>-1 || item.title_description.indexOf(parseInt(year)+1)>-1 || item.title_description.indexOf(parseInt(year)-1)>-1){
+                                    //console.log('FOUND');
                                     data = $.merge(data, [item]);
                                     //break;
                                 }
@@ -477,13 +493,36 @@ try {
         poster_img.appendTo('body');
         $('a').each(function() {
             var href = $(this).attr("href");
+            var boxofficemojo = /^\/movies\/\?id=(.+)\.htm/i.exec(href);
             // // var torrentz = /^\/([a-zA-Z0-9]{40})/i.exec(href);
             // // var piratebay = /^\/torrent\/([0-9])/i.exec(href);
             //alert(href);
             // // if( torrentz || piratebay ){
-                //alert(href);
-                var title = $(this).text().toLowerCase().replace(',', ' ').replace('.', ' ').replace('(', ' ').replace('1080p', '').replace('720p', '');
-                var year = '';
+            //alert(href);
+            var title = $(this).text().toLowerCase().replace(',', ' ').replace('.', ' ').replace('(', ' ').replace('1080p', '').replace('720p', '');
+            var year = '';
+            if (boxofficemojo){
+                title = $(this).text().toLowerCase();
+                if(!year){
+                    year = /\(([0-9]{4}).*\)/.exec(title);
+                    if(year){ // year from link text (if available)
+                        title = title.replace(year[0], ' ').trim();
+                        year = year[1];
+                    }else{
+                        year = /([0-9]{4})\.htm$/.exec(href);
+                        if(year){ // year from link href (if available)
+                            year = year[1];
+                        }else{ // year from GET parameter (if available)
+                            year = $.urlParam('yr');
+                            if(!year){ // year is current year
+                                year = (new Date()).getFullYear();
+                            }
+                        }
+                    }
+                }
+                match = title;
+                //console.log('boxofficemojo: '+title + ":::" + year);
+            }else{
                 match = reM.exec(title);
                 if(match >= 1900){
                     year = match;
@@ -495,28 +534,29 @@ try {
                         title = title.substr(0, title.search(reS)).trim();
                     }
                 }
-                //alert(title);
+            }
+            //alert(title);
 
-                //alert(title+':'+year);
-                if (match){
-                    if(match.length && count < 40) { // count increased by ajax call failures
-                        $(this).parent().addClass(classFromTitle(title+'_'+year+'_'+from_imdb));
-                        movie_loading[classFromTitle(title+'_'+year+'_'+from_imdb)] = [title, year];
-                    } else if (match.length) {
-                        title = title.substr(0, title.search(re));
-                        var nel = '<a href="http://www.imdb.com/find?ref_=nv_sr_fn&q=' + title + '&s=all" target="_blank">??</a>';
-                        $(this).parent().prepend(nel+ ' ');
-                    }
-                } else {
-                    //alert('aaa');
-                    $('a', this).css('color','#777');
+            //alert(title+':'+year);
+            if (match){
+                if(match.length && count < 40) { // count increased by ajax call failures
+                    $(this).parent().addClass(classFromTitle(title+'_'+year+'_'+from_imdb));
+                    movie_loading[classFromTitle(title+'_'+year+'_'+from_imdb)] = [title, year];
+                } else if (match.length) {
+                    title = title.substr(0, title.search(re));
+                    var nel = '<a href="http://www.imdb.com/find?ref_=nv_sr_fn&q=' + title + '&s=all" target="_blank">??</a>';
+                    $(this).parent().prepend(nel+ ' ');
                 }
+            } else {
+                //alert('aaa');
+                $('a', this).css('color','#777');
+            }
             // // }
 
         });
         var movies_in_page = $('<div class="movies_in_page" style="max-height:100px; width:100%; overflow:auto; /* position:absolute; */ font-size:85%;text-align:left;"></div>');
         $.each(movie_loading, function( index, value ) {
-            $('<div class="'+index+'"><div style=""><a href="#">'+toTitleCase(value[0])+' ('+value[1]+')</a></div></div>').appendTo(movies_in_page);
+            $('<div class="'+index+'"><div style=""><a href="#" onClick="$(\'.'+index+'\').css(\'background-color\', \'yellow\')">'+toTitleCase(value[0])+' ('+value[1]+')</a></div></div>').appendTo(movies_in_page);
         });
         movies_in_page.insertAfter(start_button);
         $.each(movie_loading, function( index, value ) {
@@ -537,4 +577,3 @@ try {
 } catch (e) {
     unsafeWindow.console.log(e);
 }
-
