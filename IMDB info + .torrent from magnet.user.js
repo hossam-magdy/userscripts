@@ -233,7 +233,7 @@ try {
                         if (data){
                             var movie_imdb = {};
                             movie_imdb.imdbID = data.id;
-                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank">'+data.title+'</a>';
+                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank" style="max-width: 30px; display: inline-block;">'+data.title+'</a>';
                             //if(movie_imdb['Title'] == 'Babysitting 2'){ alert(); }
                             //movie_imdb['Year'] = /\d{4}/.exec(data['title_description']);  movie_imdb['Year'] = movie_imdb['Year'][0]
                             //movie_imdb['Director'] = $(data['title_description'].replace(movie_imdb['Year']+',', '')).text();
@@ -475,7 +475,7 @@ try {
         poster_img = $('<table style="position: fixed; width:475px; height:283px; color:#000; background-color:white; border:3px solid #222; border-collapse: collapse; border-spacing:0px; cell-spacing:0px; z-index:9999;"><tr>' + 
                        '<td><a href="" target="_blank" title="" id="imdb_a" style="display:flex;"><img width="200" height="283" border="0" src="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png"></a></td>' + 
                        '<td style="border:1px solid #222;"><div style="text-align:left; padding:3px; font-size:10pt; font-family:Tahoma; height:277px; overflow:auto;">' + 
-                       '  <div style="text-align:center; font-size:125%pt; font-weight:bold;"><span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)</div>' + 
+                       '  <div style="text-align:center; font-size:125%pt; font-weight:bold; display: inline-block;"><span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)</div>' + 
                        '  <span id="imdb_trailer"><a href="" target="_new"><u>Trailer</u></a> <iframe src="" style="display:none;"></iframe> - </span>' + 
                        '  <u>Rating</u>: <span id="imdb_rating">8.1</span> - <span id="imdb_votes">275,300</span> votes' + 
                        '  <br /><u>Genre</u>: <span id="imdb_genre">Adventure, Comedy, Drama</span>' + 
