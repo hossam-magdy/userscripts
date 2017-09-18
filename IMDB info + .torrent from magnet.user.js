@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       1.20170528
+// @version       1.20170918
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -108,7 +108,7 @@ try {
             star = '&#9734;';
         }
 
-        var el = '<a href="http://www.imdb.com/title/' + movie_db[stor_title].imdbID + '" target="_blank" title="' + el_title + '" style="max-width: 30px; display: inline-block; font-size:85%; margin:0 4px 0 0;">' + movie_db[stor_title].imdbRating + star + '</a>';
+        var el = '<a href="http://www.imdb.com/title/' + movie_db[stor_title].imdbID + '" target="_blank" title="' + el_title + '" style="float: left; max-width: 30px; min-width: 30px; font-size:85%; margin:0 4px 0 0;">' + movie_db[stor_title].imdbRating + star + '</a>';
         var rating = parseFloat(movie_db[stor_title].imdbRating);//alert(rating);
         var votes = parseFloat(movie_db[stor_title].imdbVotes.replace(',',''));
         if (rating >= 7.5 || votes>50000) { el = '<b>'+el+'</b>'; }
@@ -122,6 +122,7 @@ try {
             $(this).css({opacity: opac});
             var theElement_a = $(this).find('a').first();
             $(el+ ' ').insertBefore(theElement_a);
+            $(theElement_a).css('display', 'inline-block');
             theElement_a.on('mouseover', function(e){
                 poster_img.find('img').attr('src', 'http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png');
                 if (movie_db[stor_title].Poster){
@@ -171,7 +172,7 @@ try {
         var dl_element = $('.'+stor_title);
         //alert($('.'+stor_title).length);
         //$(' <span id="loading" style="font-size:55%; display:inline-block; width:40px;"> (Loading) </span> ').insertBefore($('a', dl_element).first());
-        $(dl_element).each(function(){ $(' <span id="loading" style="font-size:55%; display:inline-block; width:40px;"> (Loading) </span> ').insertBefore($(this).find('a').first()); });
+        $(dl_element).each(function(){ $(' <span id="loading" style="float: left; min-width: 35px; max-width: 35px; text-align: center;"> (Loading) </span> ').insertBefore($(this).find('a').first()); });
         //alert("\""+title + "\""+year);
         //alert(url);
         if ( !live && stor_title in movie_db && movie_db[stor_title]!==false ) {
@@ -233,7 +234,7 @@ try {
                         if (data){
                             var movie_imdb = {};
                             movie_imdb.imdbID = data.id;
-                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank">'+data.title+'</a>';
+                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank" style="max-width: 30px; display: inline-block;">'+data.title+'</a>';
                             //if(movie_imdb['Title'] == 'Babysitting 2'){ alert(); }
                             //movie_imdb['Year'] = /\d{4}/.exec(data['title_description']);  movie_imdb['Year'] = movie_imdb['Year'][0]
                             //movie_imdb['Director'] = $(data['title_description'].replace(movie_imdb['Year']+',', '')).text();
@@ -287,17 +288,17 @@ try {
                                 },
                                 onerror: function(e2){
                                     //alert(e2);
-                                    $('#loading', dl_element).text(' Error2 ');
+                                    $('#loading', dl_element).text(' ⛌ ').attr('title', 'Error in retrieving data');
                                     //alert('xxx request failed xxx: ' + JSON.stringify(e2) + ' : ' + url2);
                                     console.warn('request failed: ' + url2);
                                 }
                             });
                         }else{
-                            $('#loading', dl_element).text(' NotFound ');
+                            $('#loading', dl_element).text(' ⚠ ').attr('title', 'Not found');
                         }
                     },
                     onerror: function(e1){
-                        $('#loading', dl_element).text(' Error1 ');
+                        $('#loading', dl_element).text(' ⛌ ').attr('title', 'Error in searching for title');
                         //alert('xxx request failed xxx: ' + JSON.stringify(e1) + ' : ' + url);
                         console.warn('request failed: ' + url);
                     }
@@ -474,8 +475,8 @@ try {
         start_button.hide();
         poster_img = $('<table style="position: fixed; width:475px; height:283px; color:#000; background-color:white; border:3px solid #222; border-collapse: collapse; border-spacing:0px; cell-spacing:0px; z-index:9999;"><tr>' + 
                        '<td><a href="" target="_blank" title="" id="imdb_a" style="display:flex;"><img width="200" height="283" border="0" src="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png"></a></td>' + 
-                       '<td style="border:1px solid #222;"><div style="text-align:left; padding:3px; font-size:10pt; font-family:Tahoma; height:277px; overflow:auto;">' + 
-                       '  <div style="text-align:center; font-size:125%pt; font-weight:bold; display: inline-block;"><span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)</div>' + 
+                       '<td style="border:1px solid #222;"><div style="text-align:left; padding:3px; font-size:10pt; font-family:Tahoma; height:277px; overflow:auto; display:inline-block;">' +
+                       '  <div style="text-align:center; font-size:125%pt; font-weight:bold;"><span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)</div>' + 
                        '  <span id="imdb_trailer"><a href="" target="_new"><u>Trailer</u></a> <iframe src="" style="display:none;"></iframe> - </span>' + 
                        '  <u>Rating</u>: <span id="imdb_rating">8.1</span> - <span id="imdb_votes">275,300</span> votes' + 
                        '  <br /><u>Genre</u>: <span id="imdb_genre">Adventure, Comedy, Drama</span>' + 
