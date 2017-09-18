@@ -234,7 +234,7 @@ try {
                         if (data){
                             var movie_imdb = {};
                             movie_imdb.imdbID = data.id;
-                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank" style="max-width: 30px; display: inline-block;">'+data.title+'</a>';
+                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank">'+data.title+'</a>';
                             //if(movie_imdb['Title'] == 'Babysitting 2'){ alert(); }
                             //movie_imdb['Year'] = /\d{4}/.exec(data['title_description']);  movie_imdb['Year'] = movie_imdb['Year'][0]
                             //movie_imdb['Director'] = $(data['title_description'].replace(movie_imdb['Year']+',', '')).text();
