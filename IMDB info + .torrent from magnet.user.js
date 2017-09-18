@@ -556,7 +556,7 @@ try {
             // // }
 
         });
-        var movies_in_page = $('<div class="movies_in_page" style="max-height:100px; width:100%; overflow:auto; /* position:absolute; */ font-size:85%;text-align:left;"></div>');
+        var movies_in_page = $('<div class="movies_in_page" style="max-height:250px; min-width:500px; margin:auto; overflow:auto; /* position:absolute; */ font-size:85%;text-align:left;"></div>');
         $.each(movie_loading, function( index, value ) {
             $('<div class="'+index+'"><div style=""><a href="#" onClick="$(\'.'+index+'\').css(\'background-color\', \'yellow\')">'+toTitleCase(value[0])+' ('+value[1]+')</a></div></div>').appendTo(movies_in_page);
         });
