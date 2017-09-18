@@ -108,7 +108,7 @@ try {
             star = '&#9734;';
         }
 
-        var el = '<a href="http://www.imdb.com/title/' + movie_db[stor_title].imdbID + '" target="_blank" title="' + el_title + '" style="font-size:85%; margin:0 4px 0 0;">' + movie_db[stor_title].imdbRating + star + '</a>';
+        var el = '<a href="http://www.imdb.com/title/' + movie_db[stor_title].imdbID + '" target="_blank" title="' + el_title + '" style="max-width: 30px; display: inline-block; font-size:85%; margin:0 4px 0 0;">' + movie_db[stor_title].imdbRating + star + '</a>';
         var rating = parseFloat(movie_db[stor_title].imdbRating);//alert(rating);
         var votes = parseFloat(movie_db[stor_title].imdbVotes.replace(',',''));
         if (rating >= 7.5 || votes>50000) { el = '<b>'+el+'</b>'; }
@@ -233,7 +233,7 @@ try {
                         if (data){
                             var movie_imdb = {};
                             movie_imdb.imdbID = data.id;
-                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank" style="max-width: 30px; display: inline-block;">'+data.title+'</a>';
+                            movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank">'+data.title+'</a>';
                             //if(movie_imdb['Title'] == 'Babysitting 2'){ alert(); }
                             //movie_imdb['Year'] = /\d{4}/.exec(data['title_description']);  movie_imdb['Year'] = movie_imdb['Year'][0]
                             //movie_imdb['Director'] = $(data['title_description'].replace(movie_imdb['Year']+',', '')).text();
