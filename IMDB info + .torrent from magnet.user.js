@@ -172,7 +172,7 @@ try {
         var dl_element = $('.'+stor_title);
         //alert($('.'+stor_title).length);
         //$(' <span id="loading" style="font-size:55%; display:inline-block; width:40px;"> (Loading) </span> ').insertBefore($('a', dl_element).first());
-        $(dl_element).each(function(){ $(' <span id="loading" style="float: left; min-width: 35px; max-width: 35px; text-align: center;"> (Loading) </span> ').insertBefore($(this).find('a').first()); });
+        $(dl_element).each(function(){ $(' <span id="loading" style="float: left; min-width: 35px; max-width: 35px; font-size: 85%; text-align: center;"> (Loading) </span> ').insertBefore($(this).find('a').first()); });
         //alert("\""+title + "\""+year);
         //alert(url);
         if ( !live && stor_title in movie_db && movie_db[stor_title]!==false ) {
@@ -556,7 +556,7 @@ try {
             // // }
 
         });
-        var movies_in_page = $('<div class="movies_in_page" style="max-height:250px; min-width:500px; margin:auto; overflow:auto; /* position:absolute; */ font-size:85%;text-align:left;"></div>');
+        var movies_in_page = $('<div class="movies_in_page" style="max-height:250px; width:500px; margin:auto; overflow:auto; /* position:absolute; */ font-size:85%;text-align:left;"></div>');
         $.each(movie_loading, function( index, value ) {
             $('<div class="'+index+'"><div style=""><a href="#" onClick="$(\'.'+index+'\').css(\'background-color\', \'yellow\')">'+toTitleCase(value[0])+' ('+value[1]+')</a></div></div>').appendTo(movies_in_page);
         });
