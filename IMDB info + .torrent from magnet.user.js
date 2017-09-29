@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       1.20170918
+// @version       1.20170929
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -143,16 +143,20 @@ try {
                 poster_img.find('#imdb_writer').html(movie_db[stor_title].Writer);
                 poster_img.find('#imdb_plot').html(movie_db[stor_title].Plot);
                 //alert(1);
+                //console.log(movie_db[stor_title]);
                 if (movie_db[stor_title].Trailer) {
                     poster_img.find('#imdb_trailer').show();
                     poster_img.find('#imdb_trailer').find('a').attr('href', movie_db[stor_title].Trailer);
-                    poster_img.find('#imdb_trailer').find('a').attr('onclick', "javascript:window.open('" + movie_db[stor_title].Trailer + "', '', 'width=600, height=338'); return false;");
+                    poster_img.find('#imdb_trailer').find('a').attr('onclick', "javascript:window.open(this.getAttribute('href'), '', 'width=900, height=500'); return false;");
                     //poster_img.find('#imdb_trailer').find('iframe').prop('src',movie_db[stor_title].Trailer);
                     //alert(2);
-                }else{
+                } else {
                     poster_img.find('#imdb_trailer').hide();
                     //alert(3);
                 }
+                poster_img.find('a[href^="/"]').each(function(){ // http://www.imdb.com
+                    $(this).attr('href', 'http://www.imdb.com' + $(this).attr('href'));
+                });
                 poster_img.css({
                     left:  $(window).width()*2/3 - poster_img.width()/2, //e.clientX+20,//
                     top:   $(window).height()/2 - poster_img.height()/2 //e.clientY//
@@ -259,8 +263,10 @@ try {
                                     movie_imdb.Poster = $(poster_match).find('img.media-object[itemprop="image"]').first().attr('data-src-x2'); //alert(movie_imdb.Poster);
                                     //movie_imdb.Poster = /data-src-x2="([^"]*)"/igm.exec(/<img[^P>]*Poster[^>]*>/igm.exec(response2.responseText)); if(movie_imdb.Poster) movie_imdb.Poster = movie_imdb.Poster[1];  //alert(movie_imdb.Poster);
                                     movie_imdb.Plot = resp2.find('p[itemprop="description"]').first().text().trim();
-                                    movie_imdb.Trailer = resp2.find('#titleOverview').find('iframe').first().attr('src');
-                                    movie_imdb.Trailer = (movie_imdb.Trailer && typeof movie_imdb.Trailer == 'string') ? 'https://m.imdb.com' + movie_imdb.Trailer : '';
+                                    //console.log(response2.responseText);
+                                    movie_imdb.Trailer = resp2.find('a[itemprop="trailer"]').attr('href');
+                                    //movie_imdb.Trailer = resp2.find('#titleOverview').find('iframe').first().attr('src');
+                                    //movie_imdb.Trailer = (movie_imdb.Trailer && typeof movie_imdb.Trailer == 'string') ? 'https://m.imdb.com' + movie_imdb.Trailer : '';
                                     movie_imdb.imdbRating = resp2.find('#ratings-bar').first().find('div').first().text() + ''; if(movie_imdb.imdbRating) movie_imdb.imdbRating = movie_imdb.imdbRating.trim();
                                     movie_imdb.imdbVotes = /\/10([0-9,]+)/.exec(movie_imdb.imdbRating); movie_imdb.imdbVotes = movie_imdb.imdbVotes ? (movie_imdb.imdbVotes[1]) : ''; if(movie_imdb.imdbVotes.length===0) movie_imdb.imdbVotes = 'N/A';
                                     movie_imdb.imdbRating = /([0-9.]+)\/10/.exec(movie_imdb.imdbRating); movie_imdb.imdbRating = movie_imdb.imdbRating ? (movie_imdb.imdbRating[1]) : ''; if(movie_imdb.imdbRating.length===1) movie_imdb.imdbRating = movie_imdb.imdbRating + '.0'; if(movie_imdb.imdbRating.length===0) movie_imdb.imdbRating = 'N/A';
