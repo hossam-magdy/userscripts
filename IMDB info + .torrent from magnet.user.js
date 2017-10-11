@@ -46,7 +46,8 @@ function jQueryCode(){
                         movieTitle = movieTitle.substr(movieTitle.indexOf(".")+1).trim();
                     var linkElement = $('<a downloadlink="1" target="_blank" title="Search for torrents">⇩</a>');
                     linkElement.attr('href', 'https://thepiratebay.org/search/'+encodeURIComponent(movieTitle)+'/0/99/0');
-                    //linkElement.css('font-size', '75%');
+                    if( $(this).parent().hasClass('title_wrapper') )
+                        linkElement.css('font-size', '50%');
                     //movieTitleElement.append(linkElement);
                     linkElement.appendTo($(this));
                 }
