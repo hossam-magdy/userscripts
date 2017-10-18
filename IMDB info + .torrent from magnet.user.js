@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       1.20171011
+// @version       1.20171018
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -159,6 +159,8 @@ function jQueryCode(){
                         poster_img.find('#imdb_year').html(movie_db[stor_title].Year);
                         poster_img.find('#imdb_rating').html(movie_db[stor_title].imdbRating);
                         poster_img.find('#imdb_votes').html(movie_db[stor_title].imdbVotes);
+                        poster_img.find('#imdb_metascore').html(movie_db[stor_title].Metascore);
+                        poster_img.find('#imdb_boxofficegross').html(movie_db[stor_title].BoxOfficeGross);
                         poster_img.find('#imdb_rated').html(movie_db[stor_title].Rated);
                         poster_img.find('#imdb_runtime').html(movie_db[stor_title].Runtime);
                         poster_img.find('#imdb_awards').html(movie_db[stor_title].Awards.replace('Another ', '<br />Another '));
@@ -301,6 +303,9 @@ function jQueryCode(){
                                             movie_imdb.imdbRating = /([0-9.]+)\/10/.exec(movie_imdb.imdbRating); movie_imdb.imdbRating = movie_imdb.imdbRating ? (movie_imdb.imdbRating[1]) : ''; if(movie_imdb.imdbRating.length===1) movie_imdb.imdbRating = movie_imdb.imdbRating + '.0'; if(movie_imdb.imdbRating.length===0) movie_imdb.imdbRating = 'N/A';
                                             movie_imdb.Rated = resp2.find('p.infobar').first().find('meta[itemprop="contentRating"]').first().attr('content');
                                             movie_imdb.Rated = movie_imdb.Rated ? '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'/parentalguide" target="_blank">'+movie_imdb.Rated.trim()+'</a>' : 'N/A';
+                                            movie_imdb.BoxOfficeGross =  (/\$[0-9,\-]+/.exec(resp2.find('section:contains("Box Office")').find('section:contains("Gross")').first().text()));
+                                            movie_imdb.BoxOfficeGross = movie_imdb.BoxOfficeGross ? movie_imdb.BoxOfficeGross[0] : '-';
+                                            movie_imdb.Metascore =  resp2.find('span.metascore').text(); movie_imdb.Metascore = movie_imdb.Metascore ? movie_imdb.Metascore : '-';
                                             movie_imdb.Director = resp2.find('a[itemprop="director"]').first().find('[itemprop="name"]').first().text().trim();
                                             var tmp_hrefDir = resp2.find('a[itemprop="director"]').first().attr('href'); //.replace('m.imdb.com', 'www.imdb.com')
                                             movie_imdb.Director = tmp_hrefDir ? '<a href="'+tmp_hrefDir.replace('m.imdb.com', 'www.imdb.com')+'" target="_blank">'+movie_imdb.Director+'</a>' : movie_imdb.Director;
@@ -510,9 +515,12 @@ function jQueryCode(){
                 poster_img = $('<table style="position: fixed; width:475px; height:283px; color:#000; background-color:white; border:3px solid #222; border-collapse: collapse; border-spacing:0px; cell-spacing:0px; z-index:9999;"><tr>' +
                                '<td><a href="" target="_blank" title="" id="imdb_poster" style="display:flex;" onclick="javascript:if(this.getAttribute(\'href\')!=\'#\') window.open(this.getAttribute(\'href\'), \'\', \'width=600, height=600\'); return false;"><img width="200" height="283" border="0" src="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png"></a></td>' +
                                '<td style="border:1px solid #222;"><div style="text-align:left; padding:3px; font-size:10pt; font-family:Tahoma; height:277px; overflow:auto; display:inline-block;">' +
-                               '  <div style="text-align:center; font-size:125%pt; font-weight:bold;"><span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)</div>' +
-                               '  <span id="imdb_trailer"><a href="" target="_new" onclick="javascript:if(this.getAttribute(\'href\')!=\'#\') window.open(this.getAttribute(\'href\'), \'\', \'width=900, height=500\'); return false;"><u>Trailer</u></a> <iframe src="" style="display:none;"></iframe> - </span>' +
-                               '  <u>Rating</u>: <span id="imdb_rating">8.1</span> - <span id="imdb_votes">275,300</span> votes' +
+                               '  <div style="text-align:center; font-size:125%pt; font-weight:bold;">' +
+                               '    <span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)' +
+                               '  </div>' +
+                               '  <span id="imdb_trailer">(<a title="Play trailer" href="" target="_new" onclick="javascript:if(this.getAttribute(\'href\')!=\'#\') window.open(this.getAttribute(\'href\'), \'\', \'width=900, height=500\'); return false;"><u>▶</u></a>)</span>, ' +
+                               '  <span id="imdb_rating">8.1</span><span style="color:grey;">/10</span> (<span id="imdb_votes">275,300</span> votes), <span id="imdb_metascore">-</span> Metascore' +
+                               '  <br /><u>Box Office Gross</u>: <span id="imdb_boxofficegross">$123,456,789</span>' +
                                '  <br /><u>Genre</u>: <span id="imdb_genre">Adventure, Comedy, Drama</span>' +
                                '  <br /><u>Rated</u>: <span id="imdb_rated">PG-13</span>, <u>Runtime</u>: <span id="imdb_runtime">144 min</span>' +
                                '  <br /><u>Awards</u>: <span id="imdb_awards"></span>' +
@@ -551,6 +559,7 @@ function jQueryCode(){
                                 }else{ // year from GET parameter (if available)
                                     year = $.urlParam('yr');
                                     if(!year){ // year is current year
+                                        //year = '-';
                                         year = (new Date()).getFullYear();
                                     }
                                 }
