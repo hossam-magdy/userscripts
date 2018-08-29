@@ -1,9 +1,8 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       1.20180303
+// @version       1.20180830
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
-// @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
 // @author        hossam6236
 // @license       GPL-3.0
 // @include       http*://*torrent*.*/*
@@ -48,7 +47,6 @@ function jQueryCode(){
                     linkElement.attr('href', 'https://thepiratebay.org/search/'+encodeURIComponent(movieTitle)+'/0/99/0');
                     if( $(this).parent().hasClass('title_wrapper') )
                         linkElement.css('font-size', '50%');
-                    //movieTitleElement.append(linkElement);
                     linkElement.appendTo($(this));
                 }
             });
@@ -65,7 +63,6 @@ function jQueryCode(){
 
         $.toTitleCase = function (str) {
             return str;
-            // return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
         };
 
         const API_KEY_OMDB = 'c989d08d';
@@ -80,8 +77,6 @@ function jQueryCode(){
                     return results[1];
                 else
                     return 0;
-                // example.com?param1=name&param2=&id=6
-                // $.urlParam('param1'); // name
             };
 
             var c = localStorage.getItem('movie_db');
@@ -96,11 +91,7 @@ function jQueryCode(){
 
             var count = 0;
             start_button = $('<div style="width: 200px; height: 60px;display: inline-block; position: fixed; opacity: 0.75; z-index: 10000; background-color: #FFF; text-align: center;"><div style="height: 20px; margin: 0px;"><input type="checkbox" name="from_imdb" id="from_imdb" style="margin: 0px; display: inline-block;" disabled="disabled" /><label for="from_imdb" style="font:10pt Tahoma; margin: 0px; display: inline-block;">from IMDb</label> | <input type="checkbox" name="live" id="live" style="margin: 0px; display: inline-block;" /><label for="live" style="font:10pt Tahoma; margin: 0px; display: inline-block;">live</label> | <a href="javascript:location.reload();" style="color:#000; font:7pt Tahoma;" id="clear">(clear cache)</a></div><button style="display: inline-block; margin:0px; padding:7px; font:12pt Tahoma;" id="start"> load IMDb info </button></div>');
-            //start_button.appendTo($('h1').first());
-            // start_button.appendTo($('h1').first());
             $('body').prepend(start_button);
-            //start_button.insertAfter($('h1').first());
-            //start_button.prependTo($('body'));
             start_button.css({height: start_button.parent().height()>0 ? start_button.parents('div').height() : start_button.parents('div').height()});
 
 
@@ -110,7 +101,6 @@ function jQueryCode(){
                     $('a', dl_element).css('color','#777');
                     return true;
                 }
-                //alert(stor_title);
                 var awards_text = $('<span>'+movie_db[stor_title].Awards+'</span>').text(); //awards_text = awards_text ? awards_text : 'N/A';
                 var el_title = movie_db[stor_title].imdbVotes + ' votes - ' +  movie_db[stor_title].Runtime + ' - Rated ' + $('<span>'+movie_db[stor_title].Rated+'</span>').text() + ' - Awards: ' +  awards_text;
                 var star = '';
@@ -122,7 +112,6 @@ function jQueryCode(){
                 var noms = reg_noms.exec(awards_text.toLowerCase()); if(noms) noms = parseFloat(noms[1]);
                 var wins_sig = reg_wins_sig.exec(awards_text.toLowerCase()); if(wins_sig) wins_sig = parseFloat(wins_sig[1]);
                 var noms_sig = reg_noms_sig.exec(awards_text.toLowerCase()); if(noms_sig) noms_sig = parseFloat(noms_sig[1]);
-                //if(match) alert(match[1]);
 
                 if((wins_sig >= 1 || noms_sig >= 3) && (wins >= 5 || noms >= 10)){
                     star = '<span style="color:#DD0000">&#9733;</span>';
@@ -150,11 +139,9 @@ function jQueryCode(){
                     $(el+ ' ').insertBefore(theElement_a);
                     $(theElement_a).css('display', 'inline-block');
                     theElement_a.on('mouseover', function(e){
-                        poster_img.find('#imdb_poster').find('img').attr('src', 'http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png');
-                        if (movie_db[stor_title].Poster) {
-                            poster_img.find('#imdb_poster').find('img').attr('src', movie_db[stor_title].Poster);
-                        }
-                        poster_img.find('#imdb_poster').attr('href', movie_db[stor_title].PosterURL ? movie_db[stor_title].PosterURL : '#');
+                        const posterUrl = movie_db[stor_title].Poster || 'http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png';
+                        poster_img.find('#imdb_poster').html(`<img src="${posterUrl}" style="width: 100%; height: 100%;">`);
+                        poster_img.find('#imdb_poster').attr('href', movie_db[stor_title].PosterURL || '#');
                         poster_img.find('#imdb_a').attr('href', 'http://www.imdb.com/title/' + movie_db[stor_title].imdbID + '');
                         poster_img.find('#imdb_a').attr('title', movie_db[stor_title].Title + ' (' + movie_db[stor_title].Year + ')');
                         poster_img.find('#imdb_title').html(movie_db[stor_title].Title);
@@ -171,17 +158,11 @@ function jQueryCode(){
                         poster_img.find('#imdb_director').html(movie_db[stor_title].Director);
                         poster_img.find('#imdb_writer').html(movie_db[stor_title].Writer);
                         poster_img.find('#imdb_plot').html(movie_db[stor_title].Plot);
-                        //alert(1);
-                        //console.log(movie_db[stor_title]);
                         if (movie_db[stor_title].Trailer) {
                             poster_img.find('#imdb_trailer').show();
                             poster_img.find('#imdb_trailer').find('a').attr('href', movie_db[stor_title].Trailer);
-                            //poster_img.find('#imdb_trailer').find('a').attr('onclick', "javascript:window.open(this.getAttribute('href'), '', 'width=900, height=500'); return false;");
-                            //poster_img.find('#imdb_trailer').find('iframe').prop('src',movie_db[stor_title].Trailer);
-                            //alert(2);
                         } else {
                             poster_img.find('#imdb_trailer').hide();
-                            //alert(3);
                         }
                         poster_img.find('a[href^="/"]').each(function(){ // http://www.imdb.com
                             $(this).attr('href', 'http://www.imdb.com' + $(this).attr('href'));
@@ -190,12 +171,10 @@ function jQueryCode(){
                             left:  $(window).width()*2/3 - poster_img.width()/2, //e.clientX+20,//
                             top:   $(window).height()/2 - poster_img.height()/2 //e.clientY//
                         });
-                        //poster_img.attr('stor_title','Actors: ' + movie_db[stor_title].Actors + ' - Director: ' + movie_db[stor_title].Director)
                         poster_img.stop(true, true).show();
                     });
                     theElement_a.first().on('mouseout', function(e){
                         poster_img.stop(true, true).fadeOut(2000);
-                        //poster_img.find('img').attr('src', '');
                     });
                 });
             };
@@ -208,28 +187,14 @@ function jQueryCode(){
                     method: 'GET',
                     url: url2,
                     onload: function(response2) {
-                        //if(movie_imdb.Title == 'The Intern'){ alert(url2+': '+JSON.stringify(movie_imdb)); }
                         var resp2 = response2.responseText.replace(/<script([\S\s]*?)>([\S\s]*?)<\/script>/igm,'');
                         resp2 = resp2.replace(/<style([\S\s]*?)>([\S\s]*?)<\/style>/igm,'');
-                        //console.log(resp2);
-                        //$('body').append('<div>aaaaaaaaaa <!--'+response2.responseText+'--></div');
-                        //alert( JSON.stringify('<div>' + /<img[^>]*>/.exec(response2.responseText) + '</div>' ) );
                         var poster_match = $(resp2).find('img.media-object[itemprop="image"][title$=" Poster"][data-src-x2]').first().parent().clone();  // alert(poster_match);
-                        //movie_imdb.Plot = poster_match;
                         resp2 = $(resp2.replace(/<img[^>]*>/igm,""));//.replace('="http:', '="httpX'));
-                        //alert(title + ' (' + year + ')' + ':' + movie_imdb.imdbID + ':\n' + resp2);
-                        //movie_imdb.Poster = resp2.find('div.media').first().find('img[itemprop="image"]').first().attr('data-src-x2');
-                        //movie_imdb.Title = resp2.find('title').text().replace(' - IMDB', '').trim();
                         movie_imdb.Poster = poster_match.find('img').first().attr('data-src-x2'); //alert(movie_imdb.Poster);
                         movie_imdb.PosterURL = poster_match.attr('href');//.attr('href');
-                        //console.log(movie_imdb.Poster);
-                        //console.log(movie_imdb.PosterURL);
-                        //movie_imdb.Poster = /data-src-x2="([^"]*)"/igm.exec(/<img[^P>]*Poster[^>]*>/igm.exec(response2.responseText)); if(movie_imdb.Poster) movie_imdb.Poster = movie_imdb.Poster[1];  //alert(movie_imdb.Poster);
                         movie_imdb.Plot = resp2.find('p[itemprop="description"]').first().text().trim();
-                        //console.log(response2.responseText);
                         movie_imdb.Trailer = resp2.find('a[itemprop="trailer"]').attr('href');
-                        //movie_imdb.Trailer = resp2.find('#titleOverview').find('iframe').first().attr('src');
-                        //movie_imdb.Trailer = (movie_imdb.Trailer && typeof movie_imdb.Trailer == 'string') ? 'https://m.imdb.com' + movie_imdb.Trailer : '';
                         movie_imdb.imdbRating = resp2.find('#ratings-bar').first().find('div').first().text() + ''; if(movie_imdb.imdbRating) movie_imdb.imdbRating = movie_imdb.imdbRating.trim();
                         movie_imdb.imdbVotes = /\/10([0-9,]+)/.exec(movie_imdb.imdbRating); movie_imdb.imdbVotes = movie_imdb.imdbVotes ? (movie_imdb.imdbVotes[1]) : ''; if(movie_imdb.imdbVotes.length===0) movie_imdb.imdbVotes = 'N/A';
                         movie_imdb.imdbRating = /([0-9.]+)\/10/.exec(movie_imdb.imdbRating); movie_imdb.imdbRating = movie_imdb.imdbRating ? (movie_imdb.imdbRating[1]) : ''; if(movie_imdb.imdbRating.length===1) movie_imdb.imdbRating = movie_imdb.imdbRating + '.0'; if(movie_imdb.imdbRating.length===0) movie_imdb.imdbRating = 'N/A';
@@ -252,16 +217,13 @@ function jQueryCode(){
                         tmp = [];
                         resp2.find('div#cast-and-crew').first().find('a').slice(0,4).each(function(){ if($(this).first('strong').text().trim().length>0) tmp = $.merge(tmp, ['<a href="'+$(this).attr('href').replace('m.imdb.com', 'www.imdb.com')+'" target="_blank">'+$(this).first('strong').text().trim()+'</a>']); });
                         movie_imdb.Actors = tmp.join(', ').trim();
-
                         //alert(JSON.stringify(movie_imdb));
                         movie_db[stor_title] = movie_imdb;
                         updateElement_dl(stor_title);
                         localStorage.setItem('movie_db', JSON.stringify(movie_db));
                     },
                     onerror: function(e2){
-                        //alert(e2);
                         $('#loading', dl_element).text(' ⛌ ').attr('title', 'Error in retrieving data');
-                        //alert('xxx request failed xxx: ' + JSON.stringify(e2) + ' : ' + url2);
                         console.warn('request failed: ' + url2);
                     }
                 });
@@ -270,24 +232,18 @@ function jQueryCode(){
             var getImdbInfo = function(title, year) {
                 var stor_title = classFromTitle( title + '_' + year + '_' + from_imdb );
                 var dl_element = $('.'+stor_title);
-                //alert($('.'+stor_title).length);
-                //$(' <span id="loading" style="font-size:55%; display:inline-block; width:40px;"> (Loading) </span> ').insertBefore($('a', dl_element).first());
                 $(dl_element).each(function(){ $(' <span id="loading" style="float: left; min-width: 35px; max-width: 35px; font-size: 85%; text-align: center;"> (Loading) </span> ').insertBefore($(this).find('a').first()); });
-                //alert("\""+title + "\""+year);
-                //alert(url);
                 if ( !live && stor_title in movie_db && movie_db[stor_title]!==false ) {
                     updateElement_dl(stor_title);
                     return true;
                 }else{
                     if (from_imdb){
                         var url = 'http://www.imdb.com/xml/find?json=1&nr=1&tt=on&q=' + encodeURIComponent(title + ' (' + year + ')');
-                        //console.log(url);
                         $('#loading', dl_element).text('1/2');
                         GM_xmlhttpRequest({
                             method: 'GET',
                             url: url,
                             onload: function(response) {
-                                //alert(title + ' (' + year + ')' + ':' + response.responseText);
                                 var resp = JSON.parse(response.responseText);
                                 var results = [];
                                 var data = [];
@@ -301,14 +257,9 @@ function jQueryCode(){
                                     results = $.merge(results, resp.title_approx);
                                 }
                                 if(reM.exec(year)){
-                                    //console.log(stor_title);
-                                    //console.log(results);
                                     $.each(results, function(index, item){
-                                        //console.log(item.title_description + (year+1));
                                         if(item.title_description.indexOf(year)>-1 || item.title_description.indexOf(parseInt(year)+1)>-1 || item.title_description.indexOf(parseInt(year)-1)>-1){
-                                            //console.log('FOUND');
                                             data = $.merge(data, [item]);
-                                            //break;
                                         }
                                     });
                                     results = data;
@@ -316,30 +267,22 @@ function jQueryCode(){
                                     $.each(results, function(index, item){
                                         if(item.title_description.toLowerCase().indexOf('series')>-1){
                                             data = $.merge(data, [item]);
-                                            //break;
                                         }
                                     });
                                     results = data;
                                 }
                                 data = 0;
-                                //alert(JSON.stringify(results));
                                 $.each(results, function(index, item){
                                     if(data===0 && item.title==title){
                                         data = item;
-                                        //break;
                                     }
                                 });
                                 if(data===0){ data = results[0]; }
-                                //alert(title + ' (' + year + ')' + ':' + JSON.stringify(resp['title_approx']));
                                 if (data){
                                     var movie_imdb = {};
                                     movie_imdb.imdbID = data.id;
                                     movie_imdb.Title = '<a href="http://www.imdb.com/title/'+movie_imdb.imdbID+'" target="_blank">'+data.title+'</a>';
-                                    //if(movie_imdb['Title'] == 'Babysitting 2'){ alert(); }
-                                    //movie_imdb['Year'] = /\d{4}/.exec(data['title_description']);  movie_imdb['Year'] = movie_imdb['Year'][0]
-                                    //movie_imdb['Director'] = $(data['title_description'].replace(movie_imdb['Year']+',', '')).text();
                                     movie_imdb.Year = /[0-9]{4}/.exec(data.title_description);  movie_imdb.Year = movie_imdb.Year[0];
-                                    //movie_imdb['Director'] = $(data['title_description'].substring(data['title_description'].indexOf(',')+1, data['title_description'].length)).text();
                                     getImdbInfoByID(movie_imdb.imdbID, stor_title, movie_imdb);
                                 }else{
                                     $('#loading', dl_element).text(' ⚠ ').attr('title', 'Not found');
@@ -347,7 +290,6 @@ function jQueryCode(){
                             },
                             onerror: function(e1){
                                 $('#loading', dl_element).text(' ⛌ ').attr('title', 'Error in searching for title');
-                                //alert('xxx request failed xxx: ' + JSON.stringify(e1) + ' : ' + url);
                                 console.warn('request failed: ' + url);
                             }
                         });
@@ -374,11 +316,8 @@ function jQueryCode(){
                                         Year: data.Year,
                                     };
                                     getImdbInfoByID(data.imdbID, stor_title, movie_imdb);
-                                    // movie_db[stor_title] = data;
-                                    // updateElement_dl(stor_title);
                                     return true;
                                 }
-                                //alert(title);
                                 localStorage.setItem('movie_db', JSON.stringify(movie_db));
                             },
                             onerror: function(){
@@ -386,14 +325,6 @@ function jQueryCode(){
                             }
                         });
                     }
-                    //if (movie_db[stor_title]===false){
-                    //$('#loading', dl_element).hide();
-                    //return false;
-                    //}
-                    //else{
-                    //    return true;
-                    //}
-
                 }
             };
 
@@ -403,116 +334,24 @@ function jQueryCode(){
                     var torrentz = /^\/([a-zA-Z0-9]{40})/i.exec(href);
                     var piratebay = /^\/torrent\/([0-9])/i.exec(href);
                     var hash = (/(^\/|^magnet\:\?xt\=urn\:btih\:)([a-zA-Z0-9]{40})/i.exec( $(this).attr('href') ));
-                    //alert(href);
                     if ( ( this.innerHTML.toLowerCase().indexOf('xxx') + this.innerHTML.toLowerCase().indexOf('porn') ) > -1 ) {
-                        //this.hide()
                         this.outerHTML = '';
-                        //} else {
                     }
 
-                    //if( torrentz || piratebay ){
-                    //alert($('a', this).attr('href'));
                     var name = $(this).text();
                     if(hash){
                         hash = hash[2].toUpperCase();
                         /////////////////////////////////////////////////////// Loading Magnet from piratebay
-                        //alert(hash);
-                        // <div class="trackers"> ...... <a href="/announcelist_159337573"> ...
                         var elem = '<span style="opacity:0.8; font-size:85%; position:absolute; display:none;" class="download-links">';
-                        //elem += '<a id="magnet_full" href="#" onclick=" return false;" style="display: inline-block; padding:0 5px 0 5px; background-color:#FFB090; text-align:center;" title="Load magnet-url with ALL trackers"> Load </a> ';
-                        //elem += '<a id="magnet_lite" target="_blank" href="magnet:?xt=urn:btih:'+hash+'&dn='+encodeURIComponent(name)+'" style="display: inline-block; padding:0 5px 0 5px; background-color:#FFB090; text-align:center;" title="Lite magnet-url">M</a> ';
-                        //elem += '<a target="_blank" href="http://torrage.biz/torrent/'+hash+'.torrent"       style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;" title="Torrent direct-url form (torrage.biz)">.T</a> ';
                         elem += '<a target="_blank" href="http://torrage.info/torrent.php?h='+hash+'"        style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a> ';
-                        //elem += '<a target="_blank" href="http://torcache.net/torrent/'+hash+'.torrent"      style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a> ';
                         elem += '<a target="_blank" href="http://www.btcache.me/torrent/'+hash+'"            style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a> ';
-                        //elem += '<a target="_blank" href="https://zoink.it/torrent/'+hash+'.torrent"         style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a> ';
                         elem += '<a target="_blank" href="http://torrentproject.se/torrent/'+hash+'.torrent" style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">m</a> ';
                         elem += '</span>';
-                        //$(elem).appendTo($('dt', this));
-                        //$('dl', this).append($(elem));
                         $(elem).insertAfter($(this));
                         $(this).on('mouseover', function(e){ $(this).next('.download-links').stop(true, true).show(); });
                         $(this).on('mouseout', function(e){ $(this).next('.download-links').hide('slow'); });
                         $(this).next('.download-links').on('mouseover', function(e){ $(this).stop(true, true).show(); });
                         $(this).next('.download-links').on('mouseout', function(e){ $(this).hide('slow'); });
-                        /*
-                var trackers = '';
-                var magnet_full = $('#magnet_full', $(this).parent());
-                magnet_full.on('click', function() {
-                    //alert('hereeee');
-                    if(hash in full_magnets){
-                        $(magnet_full).attr('href', full_magnets[hash]);
-                        $(magnet_full).attr('target', '_blank');
-                        $(magnet_full).text('Magnet');
-                        $(magnet_full).off('click');
-                        $(magnet_full).parent().html($('<div>').append($(magnet_full).clone()).html());
-                    }else{
-                        var url = 'http://torrentz.eu'+'/'+hash;
-                        //alert(url);
-                        ///*
-                        $(this).text('...');
-                        GM_xmlhttpRequest({
-                            method: 'GET',
-                            url: url,
-                            onload: function(response) {
-                                var announcelist = /href="([^a]announcelist_[^"]*)"/igm.exec(response.responseText);
-                                //alert(url+announcelist + response.responseText);
-                                if(announcelist){
-                                    var url = document.location.origin+announcelist[1];
-                                    //alert(url);
-                                    GM_xmlhttpRequest({
-                                        method: 'GET',
-                                        url: url,
-                                        onload: function(response) {
-                                            var resp = response.responseText;
-                                            resp = resp.replace("[\r\n]*","\n").trim();
-                                            var trackers = [];
-                                            $.each(resp.split("\n"), function(i, v){ if(v && v.length>0) trackers = $.merge(trackers, [encodeURIComponent(v)]); });
-                                            trackers = trackers.join('&tr=');
-                                            //$(magnet_full).text('aaa');
-                                            //alert(JSON.stringify(this));
-                                            $(magnet_full).attr('href', 'magnet:?xt=urn:btih:'+hash+'&dn='+encodeURIComponent(name)+'&tr='+trackers);
-                                            $(magnet_full).attr('target', '_blank');
-                                            $(magnet_full).text('Magnet');
-                                            $(magnet_full).off('click');
-                                            $(magnet_full).parent().html($('<div>').append($(magnet_full).clone()).html());
-
-                                            full_magnets[hash] = 'magnet:?xt=urn:btih:'+hash+'&dn='+encodeURIComponent(name)+'&tr='+trackers;
-                                            localStorage.setItem('full_magnets', JSON.stringify(full_magnets));
-                                            //alert( );
-                                        },
-                                        onerror: function(){
-                                            $(magnet_full).text('Error2');
-                                            console.warn('request failed: ' + url);
-                                        }
-                                    });
-                                }else{
-                                    $(magnet_full).text('ERROR');
-
-                                }
-                            },
-                            onerror: function(){
-                                $(magnet_full).text('Error1');
-                                console.warn('request failed: ' + url);
-                            }
-                        });
-                        ///
-                    }
-                });
-                //*/
-                        //$(this).append(elem);
-                        //alert(hash);
-
-
-                        /*
-                $(this).on('mouseover', function(e){
-                    $(this).find('.download-links').show();
-                });
-                $(this).on('mouseout', function(e){
-                    $(this).find('.download-links').hide();
-                });
-                */
-                        //}
                     }
 
                 });
@@ -525,10 +364,9 @@ function jQueryCode(){
             start_button.find('#start').click(function() {
                 from_imdb = start_button.find('#from_imdb').is(':checked');
                 live = start_button.find('#live').is(':checked');
-                //$('body').find('iframe').hide();//.outerHTML='';
                 start_button.hide();
                 poster_img = $('<table style="position: fixed; width:475px; height:283px; color:#000; background-color:white; border:3px solid #222; border-collapse: collapse; border-spacing:0px; cell-spacing:0px; z-index:9999;"><tr>' +
-                               '<td><a href="" target="_blank" title="" id="imdb_poster" style="display:flex;" onclick="javascript:if(this.getAttribute(\'href\')!=\'#\') window.open(this.getAttribute(\'href\'), \'\', \'width=600, height=600\'); return false;"><img width="200" height="283" border="0" src="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png"></a></td>' +
+                               '<td><a href="" target="_blank" title="" id="imdb_poster" style="width:200px; height: 283px; display:flex;" onclick="javascript:if(this.getAttribute(\'href\')!=\'#\') window.open(this.getAttribute(\'href\'), \'\', \'width=600, height=600\'); return false;"><img src="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png" style="width: 100%; height: 100%;"></a></td>' +
                                '<td style="border:1px solid #222;"><div style="text-align:left; padding:3px; font-size:10pt; font-family:Tahoma; height:277px; overflow:auto; display:inline-block;">' +
                                '  <div style="text-align:center; font-size:125%pt; font-weight:bold;">' +
                                '    <span id="imdb_title">The Martian</span> (<span id="imdb_year">2015</span>)' +
@@ -553,11 +391,6 @@ function jQueryCode(){
                 $('a').each(function() {
                     var href = $(this).attr("href");
                     var boxofficemojo = /^\/movies\/\?id=(.+)\.htm/i.exec(href);
-                    // // var torrentz = /^\/([a-zA-Z0-9]{40})/i.exec(href);
-                    // // var piratebay = /^\/torrent\/([0-9])/i.exec(href);
-                    //alert(href);
-                    // // if( torrentz || piratebay ){
-                    //alert(href);
                     var title = $(this).text().toLowerCase().replace(',', ' ').replace('.', ' ').replace('(', ' ').replace('1080p', '').replace('720p', '');
                     var year = '';
                     if (boxofficemojo){
@@ -581,7 +414,6 @@ function jQueryCode(){
                             }
                         }
                         match = title;
-                        //console.log('boxofficemojo: '+title + ":::" + year);
                     }else{
                         match = reM.exec(title);
                         if(match >= 1900){
@@ -595,9 +427,7 @@ function jQueryCode(){
                             }
                         }
                     }
-                    //alert(title);
 
-                    //alert(title+':'+year);
                     if (match){
                         if(match.length && count < 40) { // count increased by ajax call failures
                             $(this).parent().addClass(classFromTitle(title+'_'+year+'_'+from_imdb));
@@ -608,10 +438,8 @@ function jQueryCode(){
                             $(this).parent().prepend(nel+ ' ');
                         }
                     } else {
-                        //alert('aaa');
                         $('a', this).css('color','#777');
                     }
-                    // // }
 
                 });
                 var movies_in_page = $('<div class="movies_in_page" style="max-height:400px; width:550px; margin:auto; overflow:auto; text-align:left;"></div>');
@@ -622,12 +450,6 @@ function jQueryCode(){
                 $.each(movie_loading, function( index, value ) {
                     getImdbInfo(value[0], value[1]); // calls "updateElement_dl" from inside
                 });
-                //movies_in_page.css({width: movies_in_page.parent().width()/2});
-                //movies_in_page.css({height: movies_in_page.parent().height()>0 ? movies_in_page.parents('div').height() : movies_in_page.parents('div').height()});
-                //movies_in_page.css({
-                //    left:  $(window).width()*2/3 - movies_in_page.width()/2, //e.clientX+20,//
-                //    top:   $(window).height()/2 - movies_in_page.height()/2 //e.clientY//
-                //});
             });
 
             var classFromTitle = function(title) {
