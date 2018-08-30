@@ -77,6 +77,7 @@
             background-color:white;
             border:3px solid #222;
             border-radius: 5px;
+            overflow: hidden;
             opacity: 0;
             visibility: hidden;
             transition: all 1s ease-in-out;
