@@ -44,6 +44,9 @@
         .title_wrapper .imdb-download-link {
             font-size: .5em;
         }
+        a.movie-preview {
+            display: inline-block !important;
+        }
         .movie-preview-starter {
             display: inline-block;
             position: fixed;
@@ -85,6 +88,7 @@
         .movie-preview-box * {
             font-size: 10pt;
             font-family: Tahoma, Arial;
+            line-height: initial;
         }
         .movie-preview-box.no-trailer .preview--info--trailer {
             display: none;
@@ -430,8 +434,8 @@
                         <a target="_blank" href="http://www.btcache.me/torrent/${hash}"             style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a>
                         <a target="_blank" href="http://torrentproject.se/torrent/${hash}.torrent"  style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">m</a>
                     `);
-                    linkNode.parentNode.classList.add('assisted-torrent-link');
-                    linkNode.parentNode.append(assistingNode);
+                    linkNode.parentNode && linkNode.parentNode.classList.add('assisted-torrent-link');
+                    linkNode.parentNode && linkNode.parentNode.append(assistingNode);
                 }
 
                 let { title, year } = getMovieTitleAndYearFromLinkNode(linkNode);
@@ -440,10 +444,11 @@
                     const movieHash = getMovieHashFromTitleAndYear(title, year);
                     linkNode.classList.add('movie-preview');
                     linkNode.dataset.movieHash = movieHash;
+                    linkNode.style.display = (linkNode.style.display === 'block') ? 'inline-block' : linkNode.style.display;
                     const movieLinkEnhancementNode = document.createElement('div');
                     movieLinkEnhancementNode.classList.add('movie-preview-enhancement');
                     movieLinkEnhancementNode.classList.add('loading');
-                    linkNode.parentNode.insertBefore(movieLinkEnhancementNode, linkNode);
+                    linkNode.parentNode && linkNode.parentNode.insertBefore(movieLinkEnhancementNode, linkNode);
                     if (!moviesData.has(movieHash)) {
                         moviesData.set(
                             movieHash,
@@ -457,6 +462,8 @@
                     }
                 }
             }
+
+            console.log(moviesData);
 
             for (let movieData of moviesData.values()) {
                 movieData.promise.then(resolvedData => {
