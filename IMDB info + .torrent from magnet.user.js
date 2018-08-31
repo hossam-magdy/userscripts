@@ -303,14 +303,13 @@
                             year = year[1];
                         } else {
                             year = /([0-9]{4})\.htm$/.exec(linkHref);
-                            if (year) { // year from link href (if available)
+                            if (year && year[1] && year[1] > 1950) { // year from link href (if available)
                                 year = year[1];
-                                // } else { // year from GET parameter (if available)
-                                //     year = $.urlParam('yr');
-                                //     if (!year) { // year is current year
-                                //         //year = '-';
-                                //         year = (new Date()).getFullYear();
-                                //     }
+                            } else { // year from GET parameter (if available)
+                                year = (new URL(window.location.href)).searchParams.get('yr');
+                                if (!year) { // year is current year
+                                    year = (new Date()).getFullYear();
+                                }
                             }
                         }
                     }
@@ -320,7 +319,7 @@
                     const reS = /S[0-9]{2}E[0-9]{2}|[0-9]{1}x[0-9]{2}/i;
                     const matchYear = reM.exec(title);
                     const matchSeries = reS.exec(title);
-                    if (matchYear >= 1900) {
+                    if (matchYear > 1900) {
                         year = matchYear;
                         title = title.substr(0, title.search(reM)).trim();
                         return { title, year };
@@ -395,7 +394,7 @@
                         star = '<span style="color:#660000">&#9733;</span>';
                     } else if (wins >= 5 || noms >= 10 || noms_sig >= 1 || votes > 150000) {
                         star = '&#9733;';
-                    } else if (wins + noms >= 1) {
+                    } else if (wins + noms > 1) {
                         star = '&#9734;';
                     }
 
