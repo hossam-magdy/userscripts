@@ -5,7 +5,7 @@
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
 // @author        hossam6236
-// @license       GPL-3.0
+// @license       GPL-3.0-or-later
 // @include       http*://*torrent*.*/*
 // @include       http*://*piratebay*.*/*
 // @include       http*://*isohunt*.*/*
