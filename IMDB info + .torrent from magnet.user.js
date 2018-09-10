@@ -73,20 +73,21 @@
             top: calc(50vh - 150px);
             left: 50vw;
             display: flex;
-            color:#000;
-            background-color:white;
-            border:3px solid #222;
+            color: #000;
+            background-color: white;
+            border: 3px solid #222;
             border-radius: 5px;
             overflow: hidden;
             opacity: 0;
             visibility: hidden;
-            transition: all 1s ease-in-out;
+            transition: all 0.5s ease-in-out;
         }
         .movie-preview-box.visible {
-            opacity: 0.85;
+            opacity: 1;
             visibility: visible;
         }
-        .movie-preview-box * {
+        .movie-preview-box *,
+        .movie-preview-unique-list > * {
             font-size: 10pt;
             font-family: Tahoma, Arial;
             line-height: initial;
@@ -95,19 +96,49 @@
             display: none;
         }
         .torrent-download-links {
-            opacity:0.8;
-            font-size:90%;
-            position:absolute;
-            display:none;
+            opacity: 0.8;
+            font-size: 90%;
+            position: absolute;
+            display: none;
         }
         .assisted-torrent-link:hover .torrent-download-links {
             display: inline-block;
+        }
+        .movie-preview-unique-list {
+            width: 50%;
+            max-width: 400px;
+            max-height: 200px;
+            margin: auto;
+            overflow: auto;
+            text-align: left;
+            padding: 5px;
+            line-height: 15px;
+            color: #000;
+            background-color: white;
+            border: 3px solid #222;
+            border-radius: 5px;
+        }
+        .movie-preview-unique-list > * {
+            margin: 2px;
+        }
+        .movie-preview-unique-list a {
+            border: 0;
+        }
+        .movie-preview-unique-list a:hover {
+            border: 0;
+            text-decoration: underline;
+        }
+        a.movie-preview {
+            cursor: pointer;
+        }
+        a.movie-preview.highlight {
+            background-color: rgba(255, 231, 58, 0.59);
         }
         .movie-preview-enhancement {
             display: inline-block;
             max-width: 30px;
             min-width: 30px;
-            font-size:85%;
+            font-size: 85%;
             margin:0 4px 0 0;
         }
         .movie-preview-enhancement.remarkable {
@@ -202,10 +233,10 @@
                     </div>
                     <div class="preview--info--trailer" title="Play trailer" data-trailer-url="http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png">▶</div>
                     <span class="preview--info--imdb-rating">8.1</span><span style="color:grey;">/10</span> (<span class="preview--info--imdb-votes">275,300</span> votes), <span class="preview--info--imdb-metascore">-</span> Metascore
+                    <br /><u>Awards</u>: <span class="preview--info--awards"></span>
+                    <br /><u>Genre</u>: <span class="preview--info--genre">Adventure, Comedy, Drama</span>
                     <br /><u>Released</u>: <span class="preview--info--released">17 Oct 2017</span>
                     <br /><u>Box Office</u>: <span class="preview--info--boxofficegross">$123,456,789</span>
-                    <br /><u>Genre</u>: <span class="preview--info--genre">Adventure, Comedy, Drama</span>
-                    <br /><u>Awards</u>: <span class="preview--info--awards"></span>
                     <br /><u>Rated</u>: <span class="preview--info--mpaa-rating">PG-13</span>, <u>Runtime</u>: <span class="preview--info--runtime">144 min</span>
                     <br /><u>Actors</u>: <span class="preview--info--actors">Matt Damon, Jessica Chastain, Kristen Wiig, Jeff Daniels</span>
                     <br /><u>Director</u>: <span class="preview--info--director">Ridley Scott</span>
@@ -317,7 +348,8 @@
                 } else {
                     const reM = /[0-9]{4}/i;
                     const reS = /S[0-9]{2}E[0-9]{2}|[0-9]{1}x[0-9]{2}/i;
-                    const matchYear = reM.exec(title);
+                    let matchYear = reM.exec(title);
+                    matchYear = matchYear && matchYear.length ? parseInt(matchYear[0]) : null;
                     const matchSeries = reS.exec(title);
                     if (matchYear > 1900) {
                         year = matchYear;
@@ -367,8 +399,9 @@
                     linkNode.onmouseout = () => {
                         previewNode.hide();
                     };
-                    const enhancementNode = linkNode.parentNode.querySelector('.movie-preview-enhancement');
-                    enhancementNode.classList.remove('loading');
+                    const enhancementNode = document.createElement('div');
+                    enhancementNode.classList.add('movie-preview-enhancement');
+                    linkNode.parentNode && linkNode.parentNode.insertBefore(enhancementNode, linkNode);
 
                     const awards_text = resolvedMovieData.Awards.toLowerCase(); //awards_text = awards_text ? awards_text : 'N/A';
                     const el_tip = `${resolvedMovieData.imdbVotes} votes - ${resolvedMovieData.Runtime} - Rated ${resolvedMovieData.Rated} - Awards: ${awards_text}`;
@@ -409,7 +442,36 @@
                 }
             };
 
-            const moviesData = new Map();
+            const createUniqueMovieList = (moviesDataMap) => {
+                let wrapperNode = document.createElement('div');
+                wrapperNode.classList.add('movie-preview-unique-list');
+                for (let movieData of moviesDataMap.values()) {
+                    let parentNode, linkNode;
+                    parentNode = document.createElement('div');
+                    linkNode = document.createElement('a');
+                    linkNode.textContent = movieData.hash;
+                    linkNode.classList.add('movie-preview');
+                    linkNode.dataset.movieHash = movieData.hash;
+                    linkNode.onclick = () => {
+                        for (let movPreview of document.querySelectorAll('.movie-preview')) {
+                            movPreview.classList.remove('highlight');
+                        }
+                        for (let movPreview of document.querySelectorAll(`.movie-preview[data-movie-hash="${movieData.hash}"]`)) {
+                            movPreview.classList.add('highlight');
+                        }
+                    };
+                    movieData.promise.then(resolvedData => {
+                        if (resolvedData.Title) {
+                            linkNode.textContent = `${resolvedData.Title} (${resolvedData.Year})`;
+                        }
+                    });
+                    wrapperNode.appendChild(parentNode);
+                    parentNode.appendChild(linkNode);
+                }
+                return wrapperNode;
+            };
+
+            const moviesDataMap = new Map();
 
             for (let linkNode of document.querySelectorAll('a')) {
                 const href = linkNode.getAttribute('href');
@@ -445,12 +507,8 @@
                     linkNode.classList.add('movie-preview');
                     linkNode.dataset.movieHash = movieHash;
                     linkNode.style.display = (linkNode.style.display === 'block') ? 'inline-block' : linkNode.style.display;
-                    const movieLinkEnhancementNode = document.createElement('div');
-                    movieLinkEnhancementNode.classList.add('movie-preview-enhancement');
-                    movieLinkEnhancementNode.classList.add('loading');
-                    linkNode.parentNode && linkNode.parentNode.insertBefore(movieLinkEnhancementNode, linkNode);
-                    if (!moviesData.has(movieHash)) {
-                        moviesData.set(
+                    if (!moviesDataMap.has(movieHash)) {
+                        moviesDataMap.set(
                             movieHash,
                             {
                                 title,
@@ -463,9 +521,11 @@
                 }
             }
 
-            console.log(moviesData);
+            console.log(moviesDataMap);
 
-            for (let movieData of moviesData.values()) {
+            document.body.prepend(createUniqueMovieList(moviesDataMap));
+
+            for (let movieData of moviesDataMap.values()) {
                 movieData.promise.then(resolvedData => {
                     updateLinkNodesWithMovieData(
                         document.querySelectorAll(`.movie-preview[data-movie-hash="${movieData.hash}"]`),
