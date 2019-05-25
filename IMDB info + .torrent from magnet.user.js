@@ -535,4 +535,10 @@
             document.body.append(previewNode);
         };
     }
+
+    if (hostname.endsWith('thepiratebay.org')) {
+        document.querySelector('#main-content').style.marginLeft = 0
+        document.querySelector('#main-content').style.marginRight = 0
+    }
+
 })(document, window.location.hostname);
