@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       2.20190922
+// @version       2.20190928
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -192,6 +192,29 @@
         styleNode.type = 'text/css';
         styleNode.textContent = style;
         document.head.append(styleNode);
+    };
+
+    const setImgSrcBypassingAdBlock = (imageNode, src) => {
+        imageNode.src = src;
+        imageNode.onerror = e => {
+            if (!imageNode.src.startsWith('http')) return;
+            GM_xmlhttpRequest({
+                url: imageNode.src,
+                method: 'GET',
+                responseType: 'blob',
+                onload: (data) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        imageNode.src = reader.result;
+                        const oldNode = imageNode;
+                        imageNode = oldNode.cloneNode();
+                        imageNode.style = '';
+                        oldNode.replaceWith(imageNode);
+                    };
+                    reader.readAsDataURL(data.response);
+                }
+            });
+        };
     };
 
     const getTorrentSearchURLFromMovieTitle = movieTitle => `https://thepiratebay.org/search/${encodeURIComponent(movieTitle)}/0/99/0`;
@@ -425,22 +448,8 @@
             previewNode.querySelector('.preview--info--title .title').textContent = movie.Title;
             previewNode.querySelector('.preview--info--title .year').textContent = movie.Year;
 
-            const imageNode = previewNode.querySelector('.preview--poster--img');
             if (!movie.Poster) previewNode.classList.add('no-poster'); else previewNode.classList.remove('no-poster');
-            imageNode.src = movie.Poster || POSTER_PLACEHOLDER;
-            imageNode.onerror = (e) => {
-                if (!imageNode.src.startsWith('http')) return;
-                GM_xmlhttpRequest({
-                    url: imageNode.src,
-                    method: 'GET',
-                    responseType: 'blob',
-                    onload: (data) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => (imageNode.src = reader.result);
-                        reader.readAsDataURL(data.response);
-                    }
-                });
-            };
+            setImgSrcBypassingAdBlock(previewNode.querySelector('.preview--poster--img'), movie.Poster || POSTER_PLACEHOLDER);
 
             if (!movie.Trailer)
                 previewNode.classList.add('no-trailer');
