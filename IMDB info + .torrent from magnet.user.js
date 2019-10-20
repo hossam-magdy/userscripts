@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       2.20190928
+// @version       2.20191020
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
 // @author        hossam6236
 // @license       GPL-3.0-or-later
 // @include       http*://*torrent*.*/*
-// @include       http*://*piratebay*.*/*
+// @include       http*://*pirate*bay*.*/*
+// @include       http*://*tpb*.*/*
 // @include       http*://*isohunt*.*/*
 // @include       http*://*1337x*.*/*
 // @include       http*://*rarbg*.*/*
@@ -393,6 +394,9 @@
         if (innerHTML.includes('xxx') || innerHTML.includes('porn')) node.outerHTML = '';
     };
 
+    const isHostnamePirateBay = hostname => /.*(pirate.*bay|tpb).*/.test(hostname);
+    const isHostnameIMDB = hostname => hostname.endsWith('imdb.com');
+
     const initPreviewNode = () => {
         const previewNode = document.createElement('div');
         previewNode.classList.add('movie-preview-box');
@@ -482,7 +486,7 @@
 
     appendStyleToDocument(STYLE);
 
-    if (hostname.endsWith('imdb.com')) {
+    if (isHostnameIMDB(hostname)) {
         applyImdbManipulation();
     } else {
         const starterNode = document.createElement('form');
@@ -564,7 +568,7 @@
         document.body.prepend(starterNode);
     }
 
-    if (hostname.endsWith('thepiratebay.org')) {
+    if (isHostnamePirateBay(hostname)) {
         document.querySelector('#main-content').style.marginLeft = 0
         document.querySelector('#main-content').style.marginRight = 0
     }
