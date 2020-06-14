@@ -334,7 +334,7 @@
             let noms_sig = reg_noms_sig.exec(awards_text); if (noms_sig) noms_sig = parseFloat(noms_sig[1]);
 
             const rating = parseFloat(resolvedMovieData.imdbRating);
-            const votes = parseFloat(resolvedMovieData.imdbVotes.replace(',', ''));
+            const votes = parseFloat(resolvedMovieData.imdbVotes.replace(/,/g, ''));
             if (rating >= 7.0 && votes > 50000) {
                 enhancementNode.classList.add('remarkable');
             }
