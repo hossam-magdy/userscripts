@@ -37,9 +37,50 @@
 // TODO:
 // - storage (cleanup)
 
-((document, hostname) => {
-    const POSTER_PLACEHOLDER = 'http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png';
-    const STYLE = `
+/**
+ * @typedef {(m: ResolvedMovieData) => void} CbMovieMouseEvent
+ * @typedef {Map<string, { title: string, year: string, hash: string, promise: Promise<ResolvedMovieData> }>} MoviesDataMap
+ * @typedef {{
+        Error?: any;
+        Actors: string;
+        Awards: string;
+        BoxOffice: string;
+        Country: string;
+        DVD: string;
+        Director: string;
+        Genre: string;
+        Language: string;
+        Metascore: string;
+        Plot: string;
+        Poster: string;
+        Production: string;
+        Rated: string;
+        Ratings: {Source: string;Value: string;}[][];
+        Released: string;
+        Response: string;
+        Runtime: string;
+        Title: string;
+        Trailer?: string;
+        Type: string;
+        Website: string;
+        Writer: string;
+        Year: string;
+        imdbID: string;
+        imdbRating: string;
+        imdbVotes: string;
+    }} ResolvedMovieData
+ */
+
+/**
+ * @global
+ * @type {(a: Partial<XMLHttpRequest> & {url: string; method: string;}) => void} GM_xmlhttpRequest
+ */
+var GM_xmlhttpRequest;
+
+(function IIFE(document, hostname) {
+  const POSTER_PLACEHOLDER =
+    "http://ia.media-imdb.com/images/G/01/imdb/images/nopicture/large/film-184890147._CB379391879_.png";
+  const STYLE = `
     .imdb-download-link::before {
         content: '⇩';
     }
@@ -137,14 +178,28 @@
         background-color: rgba(255, 231, 58, 0.59);
     }
     .movie-preview-enhancement {
-        display: inline-block;
+        display: inline-block !important;
         max-width: 30px;
         min-width: 30px;
         font-size: 85%;
         margin:0 4px 0 0;
     }
     .movie-preview-enhancement.remarkable {
-        font-weight: bold;
+      font-weight: bold;
+    }
+    .movie-preview-enhancement.starred-1::after {
+      content: "★";
+      color: #DD0000;
+    }
+    .movie-preview-enhancement.starred-2::after {
+      content: "★";
+      color: #660000;
+    }
+    .movie-preview-enhancement.starred-3::after {
+      content: "★";
+    }
+    .movie-preview-enhancement.starred-4::after {
+      content: "☆";
     }
     .preview--poster {
         flex-shrink: 0;
@@ -188,219 +243,360 @@
     }
     `;
 
-    const appendStyleToDocument = style => {
-        const styleNode = document.createElement('style');
-        styleNode.type = 'text/css';
-        styleNode.textContent = style;
-        document.head.append(styleNode);
+  /** @param {string} style */
+  const appendStyleToDocument = (style) => {
+    const styleNode = document.createElement("style");
+    styleNode.type = "text/css";
+    styleNode.textContent = style;
+    document.head.append(styleNode);
+  };
+
+  /**
+   * @param {HTMLImageElement} imageNode
+   * @param {string} src
+   */
+  const setImgSrcBypassingAdBlock = (imageNode, src) => {
+    imageNode.src = src;
+    imageNode.onerror = (e) => {
+      if (!imageNode.src.startsWith("http")) return;
+      GM_xmlhttpRequest({
+        url: imageNode.src,
+        method: "GET",
+        responseType: "blob",
+        onload: (data) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            // @ts-ignore
+            imageNode.src = reader.result;
+            const oldNode = imageNode;
+            // @ts-ignore
+            imageNode = oldNode.cloneNode();
+            // @ts-ignore
+            imageNode.style = "";
+            oldNode.replaceWith(imageNode);
+          };
+          // @ts-ignore
+          reader.readAsDataURL(data.response);
+        },
+      });
     };
+  };
 
-    const setImgSrcBypassingAdBlock = (imageNode, src) => {
-        imageNode.src = src;
-        imageNode.onerror = e => {
-            if (!imageNode.src.startsWith('http')) return;
-            GM_xmlhttpRequest({
-                url: imageNode.src,
-                method: 'GET',
-                responseType: 'blob',
-                onload: (data) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        imageNode.src = reader.result;
-                        const oldNode = imageNode;
-                        imageNode = oldNode.cloneNode();
-                        imageNode.style = '';
-                        oldNode.replaceWith(imageNode);
-                    };
-                    reader.readAsDataURL(data.response);
-                }
-            });
-        };
-    };
+  /** @param {string} movieTitle */
+  const getTorrentSearchURLFromMovieTitle = (movieTitle) =>
+    `https://thepiratebay.org/search/${encodeURIComponent(movieTitle)}/0/99/0`;
 
-    const getTorrentSearchURLFromMovieTitle = movieTitle => `https://thepiratebay.org/search/${encodeURIComponent(movieTitle)}/0/99/0`;
+  const applyImdbDomUpdate = () => {
+    const movieTitleNodes = document.querySelectorAll(
+      "div.titleBar > div.title_wrapper > h1, td.titleColumn, div.lister-item-content .lister-item-header, div.title > a.title-grid, td.overview-top > h4 > a"
+    );
+    for (let movieTitleNode of movieTitleNodes) {
+      if (movieTitleNode.hasAttribute("with-download-link")) continue;
+      movieTitleNode.setAttribute("with-download-link", "true");
 
-    const applyImdbManipulation = () => {
-        const movieTitleNodes = document.querySelectorAll('div.titleBar > div.title_wrapper > h1, td.titleColumn, div.lister-item-content .lister-item-header, div.title > a.title-grid, td.overview-top > h4 > a');
-        for (let movieTitleNode of movieTitleNodes) {
-            if (movieTitleNode.hasAttribute('with-download-link')) continue;
-            movieTitleNode.setAttribute('with-download-link', true);
+      let movieTitle = movieTitleNode.textContent || "";
+      if (movieTitleNode.querySelector(".lister-item-index")) {
+        /** @type {HTMLElement} */
+        // @ts-ignore
+        let movieTitleNodeClone = movieTitleNode.cloneNode(true);
+        movieTitleNodeClone.removeChild(
+          /** @type {Node} */
+          (movieTitleNodeClone.querySelector(".lister-item-index"))
+        ).textContent;
+      }
+      movieTitle = movieTitle.replace(/\s+/g, " ").trim();
 
-            let movieTitle = movieTitleNode.textContent;
-            if (movieTitleNode.querySelector('.lister-item-index')) {
-                let movieTitleNodeClone = movieTitleNode.cloneNode(true);
-                movieTitleNodeClone.removeChild(movieTitleNodeClone.querySelector('.lister-item-index')).textContent;
-            }
-            movieTitle = movieTitle.replace(/\s+/g, " ").trim()
+      const linkNode = document.createElement("a");
+      linkNode.classList.add("imdb-download-link");
+      linkNode.setAttribute(
+        "href",
+        getTorrentSearchURLFromMovieTitle(movieTitle)
+      );
 
-            const linkNode = document.createElement('a');
-            linkNode.classList.add('imdb-download-link');
-            linkNode.setAttribute('href', getTorrentSearchURLFromMovieTitle(movieTitle));
+      movieTitleNode.append(linkNode);
+    }
+  };
 
-            movieTitleNode.append(linkNode);
-        }
-    };
+  /**
+   * @param {string} title
+   * @param {string} year
+   */
+  const getMovieHashFromTitleAndYear = (title, year = "") => {
+    return `${title}_${year}`.trim().replace(/[^a-zA-Z0-9]+/g, "-");
+  };
 
-    const getMovieHashFromTitleAndYear = (title, year = '') => {
-        return `${title}_${year}`.trim().replace(/[^a-zA-Z0-9]+/g, '-');
-    };
-
-    const getMovieTitleAndYearFromLinkNode = linkNode => {
-        const linkText = linkNode.textContent;
-        const linkHref = linkNode.getAttribute('href');
-        const boxofficemojo = /^\/movies\/\?id=(.+)\.htm/i.exec(linkHref);
-        let title = linkText.toLowerCase().replace(',', ' ').replace('.', ' ').replace('(', ' ').replace('1080p', '').replace('720p', '');
-        let year = '';
-        if (boxofficemojo) {
-            title = linkText.toLowerCase();
-            if (!year) {
-                year = /\(([0-9]{4}).*\)/.exec(title);
-                if (year) { // year from link text (if available)
-                    title = title.replace(year[0], ' ').trim();
-                    year = year[1];
-                } else {
-                    year = /([0-9]{4})\.htm$/.exec(linkHref);
-                    if (year && year[1] && year[1] > 1950) { // year from link href (if available)
-                        year = year[1];
-                    } else { // year from GET parameter (if available)
-                        year = (new URL(window.location.href)).searchParams.get('yr');
-                        if (!year) { // year is current year
-                            year = (new Date()).getFullYear();
-                        }
-                    }
-                }
-            }
-            return { title, year };
+  /** @param {HTMLAnchorElement} linkNode */
+  const getMovieTitleAndYearFromLinkNode = (linkNode) => {
+    const linkText = linkNode.textContent || "";
+    const linkHref = linkNode.getAttribute("href") || "";
+    const boxofficemojo = /^\/movies\/\?id=(.+)\.htm/i.exec(linkHref);
+    let title = linkText
+      .toLowerCase()
+      .replace(",", " ")
+      .replace(".", " ")
+      .replace("(", " ")
+      .replace("1080p", "")
+      .replace("720p", "");
+    /** @type {any} */
+    let year = "";
+    if (boxofficemojo) {
+      title = linkText.toLowerCase();
+      if (!year) {
+        year = /\(([0-9]{4}).*\)/.exec(title);
+        if (year) {
+          // year from link text (if available)
+          title = title.replace(year[0], " ").trim();
+          year = year[1];
         } else {
-            const reM = /[0-9]{4}/i;
-            const reS = /S[0-9]{2}E[0-9]{2}|[0-9]{1}x[0-9]{2}/i;
-            let matchYear = reM.exec(title);
-            matchYear = matchYear && matchYear.length ? parseInt(matchYear[0]) : null;
-            const matchSeries = reS.exec(title);
-            if (matchYear > 1900) {
-                year = matchYear;
-                title = title.substr(0, title.search(reM)).trim();
-                return { title, year };
-            } else if (matchSeries) {
-                year = '-';
-                title = title.substr(0, title.search(reS)).trim();
-                return { title, year };
+          year = /([0-9]{4})\.htm$/.exec(linkHref);
+          if (year && year[1] && year[1] > 1950) {
+            // year from link href (if available)
+            year = year[1];
+          } else {
+            // year from GET parameter (if available)
+            year = new URL(window.location.href).searchParams.get("yr");
+            if (!year) {
+              // year is current year
+              year = new Date().getFullYear();
             }
+          }
         }
-        return { title: null, year: null };
+      }
+      return { title, year };
+    } else {
+      const reM = /[0-9]{4}/i;
+      const reS = /S[0-9]{2}E[0-9]{2}|[0-9]{1}x[0-9]{2}/i;
+      /** @type {number | RegExpExecArray | null} */
+      let matchYear = reM.exec(title);
+      matchYear = matchYear && matchYear.length ? parseInt(matchYear[0]) : null;
+      const matchSeries = reS.exec(title);
+      if (matchYear && matchYear > 1900) {
+        year = matchYear;
+        title = title.substr(0, title.search(reM)).trim();
+        return { title, year };
+      } else if (matchSeries) {
+        year = "-";
+        title = title.substr(0, title.search(reS)).trim();
+        return { title, year };
+      }
+    }
+    return { title: null, year: null };
+  };
+
+  // const storage = localStorage.getItem('movie_preview');
+
+  /** @param {string} url */
+  const fetchSafe = (url) => {
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        url,
+        method: "GET",
+        onload: (data) => {
+          // @ts-ignore
+          resolve(data.responseText);
+        },
+        onerror: reject,
+      });
+    });
+  };
+
+  /**
+   * @param {string} title
+   * @param {number|string|null} year
+   * @returns {Promise<ResolvedMovieData>}
+   */
+  const loadMovie = (title, year) => {
+    const url = `https://www.omdbapi.com/?apikey=c989d08d&t=${title}&y=${year}&plot=full&r=json`;
+    // const url = 'http://www.imdb.com/xml/find?json=1&nr=1&tt=on&q=' + encodeURIComponent(title + ' (' + year + ')');
+    return fetchSafe(url).then((responseText) => JSON.parse(responseText)); // resolvedMovieData
+  };
+
+  /**
+   * @param {string} text
+   * @param {RegExp} regexp
+   * @param {number} captureGroupIndex
+   * @returns {string}
+   */
+  const _matchOnlyCaptureGroup = (text, regexp, captureGroupIndex = 1) => {
+    const matchResult = text.match(regexp);
+    return matchResult !== null ? matchResult[captureGroupIndex] : "";
+  };
+
+  /** @param {ResolvedMovieData} resolvedMovieData */
+  const assessMovieRankings = (resolvedMovieData) => {
+    const rankingMetrics = extractRankingMetrics(resolvedMovieData);
+    const { rating, votes, wins_sig, wins, noms_sig, noms } = rankingMetrics;
+    const isRemarkable = rating >= 7.0 && votes > 50000;
+
+    let starredDegree;
+    if ((wins_sig >= 1 || noms_sig >= 2) && (wins >= 5 || noms >= 10)) {
+      starredDegree = 1; // red filled star
+    } else if (
+      wins >= 10 ||
+      (noms_sig >= 1 && noms >= 5) ||
+      (rating > 8.0 && votes > 50000)
+    ) {
+      starredDegree = 2; // darkred filled star
+    } else if (wins >= 5 || noms >= 10 || noms_sig >= 1 || votes > 150000) {
+      starredDegree = 3; // black/blue filled star
+    } else if (wins + noms > 1) {
+      starredDegree = 4; // non-filled star
+    }
+
+    let significancePercentage = 1.0;
+    if (rating <= 5.0 || votes <= 1000) {
+      significancePercentage = Math.max(
+        0.15,
+        Math.min(rating / 10, votes / 1000)
+      );
+    } else if (
+      resolvedMovieData.imdbRating == "N/A" ||
+      resolvedMovieData.imdbVotes == "N/A"
+    ) {
+      significancePercentage = 0.15;
+    }
+
+    return {
+      isRemarkable,
+      starredDegree,
+      significancePercentage,
+      rankingMetrics,
     };
+  };
 
-    // const storage = localStorage.getItem('movie_preview');
+  /** @param {ResolvedMovieData} resolvedMovieData */
+  const extractRankingMetrics = (resolvedMovieData) => {
+    const awards_text = resolvedMovieData.Awards.toLowerCase(); //awards_text = awards_text ? awards_text : 'N/A';
+    const reg_wins = /([0-9]+) win(s|)/;
+    const reg_noms = /([0-9]+) nomination(s|)/;
+    const reg_wins_sig = /Won ([0-9]+) Oscar(s|)/;
+    const reg_noms_sig = /Nominated for ([0-9]+) Oscar(s|)/;
 
-    const fetchSafe = (url) => {
-        return new Promise((resolve, reject) => {
-            GM_xmlhttpRequest({
-                url,
-                method: 'GET',
-                onload: (data) => {
-                    resolve(data.responseText);
-                },
-                onerror: reject
-            });
-        });
+    return {
+      rating: parseFloat(resolvedMovieData.imdbRating),
+      votes: parseFloat(resolvedMovieData.imdbVotes.replace(/,/g, "")),
+      wins: parseInt(_matchOnlyCaptureGroup(awards_text, reg_wins, 1)) || 0,
+      noms: parseInt(_matchOnlyCaptureGroup(awards_text, reg_noms, 1)) || 0,
+      wins_sig:
+        parseInt(_matchOnlyCaptureGroup(awards_text, reg_wins_sig, 1)) || 0,
+      noms_sig:
+        parseInt(_matchOnlyCaptureGroup(awards_text, reg_noms_sig, 1)) || 0,
+      awards_text,
     };
+  };
 
-    const loadMovie = (title, year) => {
-        const url = `https://www.omdbapi.com/?apikey=c989d08d&t=${title}&y=${year}&plot=full&r=json`;
-        // const url = 'http://www.imdb.com/xml/find?json=1&nr=1&tt=on&q=' + encodeURIComponent(title + ' (' + year + ')');
-        return fetchSafe(url)
-            .then(responseText => JSON.parse(responseText)); // resolvedMovieData
-    };
+  /**
+   * @param {HTMLElement[] | NodeListOf<Element>} nodes
+   * @param {ResolvedMovieData} resolvedMovieData
+   * @param {CbMovieMouseEvent} cbOnMouseOver
+   * @param {CbMovieMouseEvent} cbOnMouseOut
+   */
+  const updateLinkNodesWithMovieData = (
+    nodes,
+    resolvedMovieData,
+    cbOnMouseOver,
+    cbOnMouseOut
+  ) => {
+    for (let linkNode of nodes) {
+      if (resolvedMovieData.Error) continue;
+      /** @type {HTMLElement} */
+      (linkNode).onmouseover = () => cbOnMouseOver(resolvedMovieData);
+      /** @type {HTMLElement} */
+      (linkNode).onmouseout = () => cbOnMouseOut(resolvedMovieData);
 
-    const updateLinkNodesWithMovieData = (nodes, resolvedMovieData, cbOnMouseOver, cbOnMouseOut) => {
-        for (let linkNode of nodes) {
-            if (resolvedMovieData.Error) continue;
-            linkNode.onmouseover = () => cbOnMouseOver(resolvedMovieData);
-            linkNode.onmouseout = () => cbOnMouseOut(resolvedMovieData);
-            const enhancementNode = document.createElement('div');
-            enhancementNode.classList.add('movie-preview-enhancement');
-            linkNode.parentNode && linkNode.parentNode.insertBefore(enhancementNode, linkNode);
+      const {
+        isRemarkable,
+        starredDegree,
+        significancePercentage,
+        rankingMetrics: { awards_text },
+      } = assessMovieRankings(resolvedMovieData);
 
-            const awards_text = resolvedMovieData.Awards.toLowerCase(); //awards_text = awards_text ? awards_text : 'N/A';
-            const el_tip = `${resolvedMovieData.imdbVotes} votes - ${resolvedMovieData.Runtime} - Rated ${resolvedMovieData.Rated} - Awards: ${awards_text}`;
-            let star = '';
-            const reg_wins = /([0-9]+) win(s|)/;
-            const reg_noms = /([0-9]+) nomination(s|)/;
-            const reg_wins_sig = /Won ([0-9]+) Oscar(s|)/;
-            const reg_noms_sig = /Nominated for ([0-9]+) Oscar(s|)/;
-            let wins = reg_wins.exec(awards_text); if (wins) wins = parseFloat(wins[1]);
-            let noms = reg_noms.exec(awards_text); if (noms) noms = parseFloat(noms[1]);
-            let wins_sig = reg_wins_sig.exec(awards_text); if (wins_sig) wins_sig = parseFloat(wins_sig[1]);
-            let noms_sig = reg_noms_sig.exec(awards_text); if (noms_sig) noms_sig = parseFloat(noms_sig[1]);
+      const enhancementNode = document.createElement("a");
+      enhancementNode.classList.add("movie-preview-enhancement");
+      linkNode.parentNode &&
+        linkNode.parentNode.insertBefore(enhancementNode, linkNode);
+      if (isRemarkable) {
+        enhancementNode.classList.add("remarkable");
+      }
+      if (starredDegree) {
+        enhancementNode.classList.add(`starred-${starredDegree}`);
+      }
 
-            const rating = parseFloat(resolvedMovieData.imdbRating);
-            const votes = parseFloat(resolvedMovieData.imdbVotes.replace(/,/g, ''));
-            if (rating >= 7.0 && votes > 50000) {
-                enhancementNode.classList.add('remarkable');
-            }
+      enhancementNode.setAttribute(
+        "href",
+        `http://www.imdb.com/title/${resolvedMovieData.imdbID}`
+      );
+      enhancementNode.setAttribute("target", "_blank");
+      enhancementNode.setAttribute(
+        "title",
+        `${resolvedMovieData.imdbVotes} votes - ${resolvedMovieData.Runtime} - Rated ${resolvedMovieData.Rated} - Awards: ${awards_text}`
+      );
+      enhancementNode.innerHTML = resolvedMovieData.imdbRating;
+      enhancementNode.style.opacity = significancePercentage.toString();
+    }
+  };
 
-            if ((wins_sig >= 1 || noms_sig >= 2) && (wins >= 5 || noms >= 10)) {
-                star = '<span style="color:#DD0000">&#9733;</span>';
-            } else if (wins >= 10 || (noms_sig >= 1 && noms >= 5) || (rating > 8.0 && votes > 50000)) {
-                star = '<span style="color:#660000">&#9733;</span>';
-            } else if (wins >= 5 || noms >= 10 || noms_sig >= 1 || votes > 150000) {
-                star = '&#9733;';
-            } else if (wins + noms > 1) {
-                star = '&#9734;';
-            }
-
-            enhancementNode.innerHTML = `<a href="http://www.imdb.com/title/${resolvedMovieData.imdbID}" target="_blank" title="${el_tip}">${resolvedMovieData.imdbRating}${star}</a>`;
-            let opacity = 1.0;
-            if (rating <= 5.0 || votes <= 1000) {
-                opacity = Math.max(0.15, Math.min(rating / 10, votes / 1000));
-            } else if (resolvedMovieData.imdbRating == "N/A" || resolvedMovieData.imdbVotes == "N/A") {
-                opacity = 0.15;
-            }
-            enhancementNode.style.opacity = opacity;
+  /** @param {MoviesDataMap} moviesDataMap */
+  const createUniqueMovieList = (moviesDataMap) => {
+    let wrapperNode = document.createElement("div");
+    wrapperNode.classList.add("movie-preview-unique-list");
+    for (let movieData of moviesDataMap.values()) {
+      const parentNode = document.createElement("div");
+      const linkNode = document.createElement("a");
+      linkNode.textContent = movieData.hash;
+      linkNode.classList.add("movie-preview");
+      linkNode.dataset.movieHash = movieData.hash;
+      linkNode.onclick = () => {
+        for (let movPreview of document.querySelectorAll(".movie-preview")) {
+          movPreview.classList.remove("highlight");
         }
-    };
-
-    const createUniqueMovieList = moviesDataMap => {
-        let wrapperNode = document.createElement('div');
-        wrapperNode.classList.add('movie-preview-unique-list');
-        for (let movieData of moviesDataMap.values()) {
-            let parentNode, linkNode;
-            parentNode = document.createElement('div');
-            linkNode = document.createElement('a');
-            linkNode.textContent = movieData.hash;
-            linkNode.classList.add('movie-preview');
-            linkNode.dataset.movieHash = movieData.hash;
-            linkNode.onclick = () => {
-                for (let movPreview of document.querySelectorAll('.movie-preview')) {
-                    movPreview.classList.remove('highlight');
-                }
-                for (let movPreview of document.querySelectorAll(`.movie-preview[data-movie-hash="${movieData.hash}"]`)) {
-                    movPreview.classList.add('highlight');
-                }
-            };
-            movieData.promise.then(resolvedMovieData => {
-                if (resolvedMovieData.Title) {
-                    linkNode.textContent = `${resolvedMovieData.Title} (${resolvedMovieData.Year})`;
-                }
-            });
-            wrapperNode.appendChild(parentNode);
-            parentNode.appendChild(linkNode);
+        for (let movPreview of document.querySelectorAll(
+          `.movie-preview[data-movie-hash="${movieData.hash}"]`
+        )) {
+          movPreview.classList.add("highlight");
         }
-        return wrapperNode;
-    };
+      };
+      movieData.promise.then((resolvedMovieData) => {
+        if (resolvedMovieData.Title) {
+          linkNode.textContent = `${resolvedMovieData.Title} (${resolvedMovieData.Year})`;
+        }
+      });
+      wrapperNode.appendChild(parentNode);
+      parentNode.appendChild(linkNode);
+    }
+    return wrapperNode;
+  };
 
-    const cleanupPorn = node => {
-        const innerHTML = node.innerHTML.toLowerCase();
-        if (innerHTML.includes('xxx') || innerHTML.includes('porn')) node.outerHTML = '';
-    };
+  /** @param {HTMLElement} node */
+  const cleanupPorn = (node) => {
+    const innerHTML = node.innerHTML.toLowerCase();
+    if (innerHTML.includes("xxx") || innerHTML.includes("porn"))
+      node.outerHTML = "";
+  };
 
-    const isHostnamePirateBay = hostname => /.*(pirate.*bay|tpb).*/.test(hostname);
-    const isHostnameIMDB = hostname => hostname.endsWith('imdb.com');
+  /** @param {string} hostname */
+  const isHostnamePirateBay = (hostname) =>
+    /.*(pirate.*bay|tpb).*/.test(hostname);
+  /** @param {string} hostname */
+  const isHostnameIMDB = (hostname) => hostname.endsWith("imdb.com");
 
-    const initPreviewNode = () => {
-        const previewNode = document.createElement('div');
-        previewNode.classList.add('movie-preview-box');
-        previewNode.insertAdjacentHTML('beforeend', `
+  /**
+   * @param {HTMLElement} parentNode
+   * @param {string} selector
+   * @returns {HTMLElement}
+   */
+  const _querySelector = (parentNode, selector) =>
+    // @ts-ignore
+    parentNode.querySelector(selector);
+
+  const initPreviewNode = () => {
+    /** @type {HTMLDivElement & {show: ()=>void; hide: ()=>void; hiding: number; setMovie: CbMovieMouseEvent}}  */
+    // @ts-ignore
+    const previewNode = document.createElement("div");
+    previewNode.classList.add("movie-preview-box");
+    previewNode.insertAdjacentHTML(
+      "beforeend",
+      `
             <div class="preview--poster">
                 <img class="preview--poster--img" src="${POSTER_PLACEHOLDER}">
             </div>
@@ -421,156 +617,208 @@
                 <br /><u>Director</u>: <span class="preview--info--director">Ridley Scott</span>
                 <br /><u>Plot</u>: <span class="preview--info--plot">During a manned mission to Mars, Astronaut Mark Watney is presumed dead after a fierce storm and left behind by his crew. But Watney has survived and finds himself stranded and alone on the hostile planet. With only meager supplies, he must draw upon his ingenuity, wit and spirit to subsist and find a way to signal to Earth that he is alive.</span>
             </div>
-        `);
+        `
+    );
 
-        previewNode.querySelector('.preview--poster--img').onclick = e => {
-            e.preventDefault();
-            const poster = e.currentTarget.src;
-            if (poster === POSTER_PLACEHOLDER || !poster.startsWidth('http')) return;
-            window.open(poster, '', 'width=600, height=600');
-        };
-
-        previewNode.querySelector('.preview--info--trailer').onclick = e => {
-            e.preventDefault();
-            window.open(e.currentTarget.getAttribute('data-trailer-url'), '', 'width=900, height=500');
-        };
-
-        previewNode.show = () => {
-            previewNode.classList.add('visible');
-            clearTimeout(previewNode.hiding);
-        };
-
-        previewNode.hide = () => {
-            previewNode.hiding = setTimeout(
-                () => previewNode.classList.remove('visible'),
-                1500
-            );
-        };
-
-        previewNode.setMovie = movie => {
-            previewNode.querySelector('.preview--info--title > a').setAttribute('href', `http://www.imdb.com/title/${movie.imdbID}`);
-            previewNode.querySelector('.preview--info--title .title').textContent = movie.Title;
-            previewNode.querySelector('.preview--info--title .year').textContent = movie.Year;
-
-            if (!movie.Poster) previewNode.classList.add('no-poster'); else previewNode.classList.remove('no-poster');
-            setImgSrcBypassingAdBlock(previewNode.querySelector('.preview--poster--img'), movie.Poster || POSTER_PLACEHOLDER);
-
-            if (!movie.Trailer)
-                previewNode.classList.add('no-trailer');
-            else
-                previewNode.classList.remove('no-trailer');
-            previewNode.querySelector('.preview--info--trailer').dataset.trailerUrl = movie.Trailer || '';
-
-            previewNode.querySelector('.preview--info--imdb-rating').textContent = movie.imdbRating;
-            previewNode.querySelector('.preview--info--imdb-votes').textContent = movie.imdbVotes;
-            previewNode.querySelector('.preview--info--imdb-metascore').textContent = movie.Metascore;
-            previewNode.querySelector('.preview--info--released').innerHTML = movie.Released;
-            previewNode.querySelector('.preview--info--boxofficegross').innerHTML = movie.BoxOffice || 'N/A';
-            previewNode.querySelector('.preview--info--genre').textContent = movie.Genre;
-            previewNode.querySelector('.preview--info--mpaa-rating').textContent = movie.Rated;
-            previewNode.querySelector('.preview--info--runtime').textContent = movie.Runtime;
-            previewNode.querySelector('.preview--info--awards').innerHTML = movie.Awards
-                .replace('Oscars.', '<b>Oscars</b>.')
-                .replace('Oscar.', '<b>Oscar</b>.')
-                .replace('Another ', '<br />Another ');
-            previewNode.querySelector('.preview--info--actors').textContent = movie.Actors;
-            previewNode.querySelector('.preview--info--director').textContent = movie.Director;
-            previewNode.querySelector('.preview--info--plot').textContent = movie.Plot;
-        };
-
-        previewNode.onmouseover = previewNode.show;
-        previewNode.onmouseout = previewNode.hide;
-
-        return previewNode;
+    // @ts-ignore
+    previewNode.querySelector(".preview--poster--img").onclick = (e) => {
+      e.preventDefault();
+      const poster = e.currentTarget.src;
+      if (poster === POSTER_PLACEHOLDER || !poster.startsWidth("http")) return;
+      window.open(poster, "", "width=600, height=600");
     };
 
-    appendStyleToDocument(STYLE);
+    // @ts-ignore
+    previewNode.querySelector(".preview--info--trailer").onclick = (e) => {
+      e.preventDefault();
+      window.open(
+        e.currentTarget.getAttribute("data-trailer-url"),
+        "",
+        "width=900, height=500"
+      );
+    };
 
-    if (isHostnameIMDB(hostname)) {
-        applyImdbManipulation();
-    } else {
-        const starterNode = document.createElement('form');
-        starterNode.classList.add('movie-preview-starter');
-        starterNode.insertAdjacentHTML('beforeend', `<button class="movie-preview-starter--button"> load IMDb info </button>`);
-        starterNode.onsubmit = e => {
-            e.preventDefault();
+    previewNode.show = () => {
+      previewNode.classList.add("visible");
+      clearTimeout(previewNode.hiding);
+    };
 
-            const previewNode = initPreviewNode();
-            const moviesDataMap = new Map();
+    previewNode.hide = () => {
+      previewNode.hiding = setTimeout(
+        () => previewNode.classList.remove("visible"),
+        1500
+      );
+    };
 
-            for (let linkNode of document.querySelectorAll('a')) {
-                const href = linkNode.getAttribute('href');
-                // const torrentz = /^\/([a-zA-Z0-9]{40})/i.exec(href);
-                // const piratebay = /^\/torrent\/([0-9])/i.exec(href);
-                const hashMatch = /(^\/|^magnet\:\?xt\=urn\:btih\:)([a-zA-Z0-9]{40})/i.exec(href);
+    previewNode.setMovie = (movie) => {
+      _querySelector(previewNode, ".preview--info--title > a").setAttribute(
+        "href",
+        `http://www.imdb.com/title/${movie.imdbID}`
+      );
+      _querySelector(previewNode, ".preview--info--title .title").textContent =
+        movie.Title;
+      _querySelector(previewNode, ".preview--info--title .year").textContent =
+        movie.Year;
 
-                cleanupPorn(linkNode);
+      if (!movie.Poster) previewNode.classList.add("no-poster");
+      else previewNode.classList.remove("no-poster");
+      setImgSrcBypassingAdBlock(
+        /** @type {HTMLImageElement} */
+        (_querySelector(previewNode, ".preview--poster--img")),
+        movie.Poster || POSTER_PLACEHOLDER
+      );
 
-                if (hashMatch) {
-                    const hash = hashMatch[2].toUpperCase();
-                    /////////////////////////////////////////////////////// Loading Magnet from piratebay
-                    const assistingNode = document.createElement('div');
-                    assistingNode.classList.add('torrent-download-links');
-                    assistingNode.insertAdjacentHTML('beforeend', `
-                        <a target="_blank" href="http://torrage.info/torrent.php?h=${hash}"         style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a>
-                        <a target="_blank" href="http://www.btcache.me/torrent/${hash}"             style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a>
-                        <a target="_blank" href="http://torrentproject.se/torrent/${hash}.torrent"  style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">m</a>
-                    `);
-                    linkNode.parentNode && linkNode.parentNode.classList.add('assisted-torrent-link');
-                    linkNode.parentNode && linkNode.parentNode.append(assistingNode);
-                }
+      if (!movie.Trailer) previewNode.classList.add("no-trailer");
+      else previewNode.classList.remove("no-trailer");
+      _querySelector(
+        previewNode,
+        ".preview--info--trailer"
+      ).dataset.trailerUrl = movie.Trailer || "";
 
-                let { title, year } = getMovieTitleAndYearFromLinkNode(linkNode);
+      _querySelector(previewNode, ".preview--info--imdb-rating").textContent =
+        movie.imdbRating;
+      _querySelector(previewNode, ".preview--info--imdb-votes").textContent =
+        movie.imdbVotes;
+      _querySelector(
+        previewNode,
+        ".preview--info--imdb-metascore"
+      ).textContent = movie.Metascore;
+      _querySelector(previewNode, ".preview--info--released").innerHTML =
+        movie.Released;
+      _querySelector(previewNode, ".preview--info--boxofficegross").innerHTML =
+        movie.BoxOffice || "N/A";
+      _querySelector(previewNode, ".preview--info--genre").textContent =
+        movie.Genre;
+      _querySelector(previewNode, ".preview--info--mpaa-rating").textContent =
+        movie.Rated;
+      _querySelector(previewNode, ".preview--info--runtime").textContent =
+        movie.Runtime;
+      _querySelector(
+        previewNode,
+        ".preview--info--awards"
+      ).innerHTML = movie.Awards.replace("Oscars.", "<b>Oscars</b>.")
+        .replace("Oscar.", "<b>Oscar</b>.")
+        .replace("Another ", "<br />Another ");
+      _querySelector(previewNode, ".preview--info--actors").textContent =
+        movie.Actors;
+      _querySelector(previewNode, ".preview--info--director").textContent =
+        movie.Director;
+      _querySelector(previewNode, ".preview--info--plot").textContent =
+        movie.Plot;
+    };
 
-                if (title && year) {
-                    const movieHash = getMovieHashFromTitleAndYear(title, year);
-                    linkNode.classList.add('movie-preview');
-                    linkNode.dataset.movieHash = movieHash;
-                    linkNode.style.display = (linkNode.style.display === 'block') ? 'inline-block' : linkNode.style.display;
-                    if (!moviesDataMap.has(movieHash)) {
-                        moviesDataMap.set(
-                            movieHash,
-                            {
-                                title,
-                                year,
-                                hash: movieHash,
-                                promise: loadMovie(title, year)
-                            }
-                        );
-                    }
-                }
-            }
+    previewNode.onmouseover = previewNode.show;
+    previewNode.onmouseout = previewNode.hide;
 
-            console.log(`IMDB info + .torrent from magnet`, moviesDataMap);
+    return previewNode;
+  };
 
-            const cbOnMouseOver = resolvedMovieData => {
-                previewNode.setMovie(resolvedMovieData);
-                previewNode.show();
-            };
-            const cbOnMouseOut = previewNode.hide;
+  appendStyleToDocument(STYLE);
 
-            for (let movieData of moviesDataMap.values()) {
-                movieData.promise.then(resolvedMovieData => {
-                    updateLinkNodesWithMovieData(
-                        document.querySelectorAll(`.movie-preview[data-movie-hash="${movieData.hash}"]`),
-                        resolvedMovieData,
-                        cbOnMouseOver,
-                        cbOnMouseOut
-                    );
-                });
-            }
+  if (isHostnameIMDB(hostname)) {
+    applyImdbDomUpdate();
+  } else {
+    const starterNode = document.createElement("form");
+    starterNode.classList.add("movie-preview-starter");
+    starterNode.insertAdjacentHTML(
+      "beforeend",
+      `<button class="movie-preview-starter--button"> load IMDb info </button>`
+    );
+    starterNode.onsubmit = (e) => {
+      e.preventDefault();
 
-            starterNode.remove();
-            document.body.prepend(createUniqueMovieList(moviesDataMap));
-            document.body.append(previewNode);
-        };
+      const previewNode = initPreviewNode();
+      /** @type {MoviesDataMap} */
+      const moviesDataMap = new Map();
 
-        document.body.prepend(starterNode);
-    }
+      for (let linkNode of document.querySelectorAll("a")) {
+        const href = linkNode.getAttribute("href") || "";
+        // const torrentz = /^\/([a-zA-Z0-9]{40})/i.exec(href);
+        // const piratebay = /^\/torrent\/([0-9])/i.exec(href);
+        const hashMatch = /(^\/|^magnet\:\?xt\=urn\:btih\:)([a-zA-Z0-9]{40})/i.exec(
+          href
+        );
 
-    if (isHostnamePirateBay(hostname)) {
-        document.querySelector('#main-content').style.marginLeft = 0
-        document.querySelector('#main-content').style.marginRight = 0
-    }
+        cleanupPorn(linkNode);
 
+        if (hashMatch) {
+          const hash = hashMatch[2].toUpperCase();
+          /////////////////////////////////////////////////////// Loading Magnet from piratebay
+          const assistingNode = document.createElement("div");
+          assistingNode.classList.add("torrent-download-links");
+          assistingNode.insertAdjacentHTML(
+            "beforeend",
+            `
+                <a target="_blank" href="http://torrage.info/torrent.php?h=${hash}"         style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a>
+                <a target="_blank" href="http://www.btcache.me/torrent/${hash}"             style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">t1</a>
+                <a target="_blank" href="http://torrentproject.se/torrent/${hash}.torrent"  style="display: inline-block; padding:0 5px 0 5px; background-color:#748DAB; text-align:center;">m</a>
+            `
+          );
+          /** @type {HTMLElement | null} */
+          // @ts-ignore
+          const parentNode = linkNode.parentNode;
+          if (parentNode) {
+            parentNode.classList.add("assisted-torrent-link");
+            parentNode.append(assistingNode);
+          }
+        }
+
+        let { title, year } = getMovieTitleAndYearFromLinkNode(linkNode);
+
+        if (title && year) {
+          const movieHash = getMovieHashFromTitleAndYear(title, year);
+          linkNode.classList.add("movie-preview");
+          linkNode.dataset.movieHash = movieHash;
+          linkNode.style.display =
+            linkNode.style.display === "block"
+              ? "inline-block"
+              : linkNode.style.display;
+          if (!moviesDataMap.has(movieHash)) {
+            moviesDataMap.set(movieHash, {
+              title,
+              year,
+              hash: movieHash,
+              promise: loadMovie(title, year),
+            });
+          }
+        }
+      }
+
+      console.log(`IMDB info + .torrent from magnet`, moviesDataMap);
+
+      /** @param {ResolvedMovieData} resolvedMovieData */
+      const cbOnMouseOver = (resolvedMovieData) => {
+        previewNode.setMovie(resolvedMovieData);
+        previewNode.show();
+      };
+      const cbOnMouseOut = previewNode.hide;
+
+      for (let movieData of moviesDataMap.values()) {
+        movieData.promise.then((resolvedMovieData) => {
+          updateLinkNodesWithMovieData(
+            document.querySelectorAll(
+              `.movie-preview[data-movie-hash="${movieData.hash}"]`
+            ),
+            resolvedMovieData,
+            cbOnMouseOver,
+            cbOnMouseOut
+          );
+        });
+      }
+
+      starterNode.remove();
+      document.body.prepend(createUniqueMovieList(moviesDataMap));
+      document.body.append(previewNode);
+    };
+
+    document.body.prepend(starterNode);
+  }
+
+  if (isHostnamePirateBay(hostname)) {
+    /** @type {HTMLElement | null} */
+    const mainContent = document.querySelector("#main-content");
+    if (!mainContent) return;
+    mainContent.style.marginLeft = "0";
+    mainContent.style.marginRight = "0";
+  }
 })(document, window.location.hostname);
