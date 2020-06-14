@@ -8,8 +8,8 @@ Also updates IMDB website, adding quick torrent-search link.
 
 ### Install
 
-1) Install the userscript extension/addon for [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey)
-2) Install the script from [greasyfork](https://greasyfork.org/en/scripts/16946), [openuserjs](https://openuserjs.org/scripts/hossam6236/IMDB_info_+_.torrent_from_magnet) or [github](https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js)
+1. Install the userscript extension (TamperMonkey) for [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey)
+2. Install the script from [greasyfork](https://greasyfork.org/en/scripts/16946), [openuserjs](https://openuserjs.org/scripts/hossam6236/IMDB_info_+_.torrent_from_magnet) or [github](https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js)
 
 ### Sample screenshots
 
@@ -17,6 +17,8 @@ Also updates IMDB website, adding quick torrent-search link.
 
 ![IMDB](https://github.com/hossam-magdy/userscripts/raw/master/screenshot-imdb.jpg "imdb")
 
+### Want to report a _bug_? request a _feature_? or provide your feedback?
 
-### Feedback: Found a bug? want a feature?
-Report in [github issues](https://github.com/hossam-magdy/userscripts/issues) or [greasyfrok.org](https://greasyfork.org/en/scripts/16946/feedback)
+Please feel absolutely free to create a new [github issue](https://github.com/hossam-magdy/userscripts/issues/new) (preferred)
+
+Or, if you're not a github user, leave a comment on [greasyfork.org](https://greasyfork.org/en/scripts/16946/feedback)
