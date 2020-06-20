@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name          IMDB info + .torrent from magnet
-// @version       2.20200614
+// @version       2.20200620
 // @description   Show info of movies/series's (rating, poster, actors, ...) from IMDB on almost any torrent domain (thepiratebay, *torrent* , ...) as well as showing .torrent download links from any magnet:?url
 // @namespace     hossam6236
 // @updateURL     https://github.com/hossam-magdy/userscripts/raw/master/IMDB%20info%20%2B%20.torrent%20from%20magnet.user.js
@@ -36,6 +36,7 @@
 
 // TODO:
 // - storage (cleanup)
+// - tests
 
 /**
  * @typedef {(m: ResolvedMovieData) => void} CbMovieMouseEvent
@@ -466,7 +467,7 @@ var GM_xmlhttpRequest;
 
   /** @param {ResolvedMovieData} resolvedMovieData */
   const extractRankingMetrics = (resolvedMovieData) => {
-    const awards_text = resolvedMovieData.Awards.toLowerCase(); //awards_text = awards_text ? awards_text : 'N/A';
+    const awards = resolvedMovieData.Awards;
     const reg_wins = /([0-9]+) win(s|)/;
     const reg_noms = /([0-9]+) nomination(s|)/;
     const reg_wins_sig = /Won ([0-9]+) Oscar(s|)/;
@@ -475,13 +476,11 @@ var GM_xmlhttpRequest;
     return {
       rating: parseFloat(resolvedMovieData.imdbRating),
       votes: parseFloat(resolvedMovieData.imdbVotes.replace(/,/g, "")),
-      wins: parseInt(_matchOnlyCaptureGroup(awards_text, reg_wins, 1)) || 0,
-      noms: parseInt(_matchOnlyCaptureGroup(awards_text, reg_noms, 1)) || 0,
-      wins_sig:
-        parseInt(_matchOnlyCaptureGroup(awards_text, reg_wins_sig, 1)) || 0,
-      noms_sig:
-        parseInt(_matchOnlyCaptureGroup(awards_text, reg_noms_sig, 1)) || 0,
-      awards_text,
+      wins: parseInt(_matchOnlyCaptureGroup(awards, reg_wins, 1)) || 0,
+      noms: parseInt(_matchOnlyCaptureGroup(awards, reg_noms, 1)) || 0,
+      wins_sig: parseInt(_matchOnlyCaptureGroup(awards, reg_wins_sig, 1)) || 0,
+      noms_sig: parseInt(_matchOnlyCaptureGroup(awards, reg_noms_sig, 1)) || 0,
+      awards_text: awards.toLowerCase(),
     };
   };
 
